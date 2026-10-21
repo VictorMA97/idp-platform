@@ -24,6 +24,7 @@ spokes: ## Registra dev y prod en Argo CD
 up: preflight clusters argocd spokes ## Levanta toda la infraestructura base
 	@echo
 	@echo "Siguiente paso (GitOps):"
+	@echo "  1) make set-repo REPO_URL=git@github.com:VictorMA97/idp-platform.git"
 	@echo "  2) git add -A && git commit -m 'Configura repo' && git push"
 	@echo "  3) make root"
 
