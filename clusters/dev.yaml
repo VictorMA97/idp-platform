@@ -1,0 +1,23 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: dev
+servers: 1
+agents: 1
+network: idp-net
+ports:
+  - port: 8081:80
+    nodeFilters:
+      - loadbalancer
+  - port: 8444:443
+    nodeFilters:
+      - loadbalancer
+options:
+  kubeconfig:
+    updateDefaultKubeconfig: true
+    switchCurrentContext: false
+  k3s:
+    extraArgs:
+      - arg: --tls-san=k3d-dev-serverlb
+        nodeFilters:
+          - server:*

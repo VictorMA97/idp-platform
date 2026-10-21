@@ -1,0 +1,25 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: mgmt
+servers: 1
+agents: 2
+# Red docker compartida: Argo CD (en mgmt) debe alcanzar la API de dev y prod
+network: idp-net
+ports:
+  - port: 8080:80
+    nodeFilters:
+      - loadbalancer
+  - port: 8443:443
+    nodeFilters:
+      - loadbalancer
+options:
+  kubeconfig:
+    updateDefaultKubeconfig: true
+    switchCurrentContext: false
+  k3s:
+    extraArgs:
+      # Permite verificar TLS al llegar a la API por el nombre interno del balanceador
+      - arg: --tls-san=k3d-mgmt-serverlb
+        nodeFilters:
+          - server:*

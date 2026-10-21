@@ -1,0 +1,21 @@
+# App raíz (app-of-apps): Argo CD sincroniza todo lo que haya en platform/apps
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: __REPO_URL__  # idp:repo-url
+    targetRevision: HEAD
+    path: platform/apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

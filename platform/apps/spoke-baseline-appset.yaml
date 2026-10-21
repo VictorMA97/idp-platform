@@ -1,0 +1,32 @@
+# Despliega la línea base (namespace de equipo, cuotas, NetworkPolicies) en cada spoke.
+# El generador de clústeres recorre los Secrets con la etiqueta idp.dev/role=spoke
+# (los crea scripts/register-spokes.sh) y elige el overlay según la etiqueta env.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: spoke-baseline
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            idp.dev/role: spoke
+  template:
+    metadata:
+      name: 'baseline-{{.name}}'
+    spec:
+      project: default
+      source:
+        repoURL: __REPO_URL__  # idp:repo-url
+        targetRevision: HEAD
+        path: 'platform/spokes/baseline/overlays/{{.metadata.labels.env}}'
+      destination:
+        server: '{{.server}}'
+        namespace: team-demo
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true

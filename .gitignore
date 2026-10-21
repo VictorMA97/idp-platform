@@ -1,0 +1,12 @@
+# Credenciales y entornos locales: nunca al repositorio
+.env
+*.env
+kubeconfig*
+*.kubeconfig
+*.pem
+*.key
+
+# Otros
+*.log
+node_modules/
+.DS_Store
