@@ -52,26 +52,6 @@ make status
 - Tras `make root`: aplicaciones `platform-root`, `cert-manager`, `baseline-dev` y `baseline-prod`.
 - En cada spoke: `kubectl --context k3d-dev -n team-demo get quota,limitrange,netpol`.
 
-## Problemas conocidos y cómo resolverlos
-
-| Síntoma | Causa probable | Solución |
-|---|---|---|
-| `Docker no responde` | Docker no arrancado o sin integración WSL | Arranca Docker Desktop y activa la integración con tu distro |
-| Puerto 8080 ocupado | Otro servicio de Windows o WSL | Cambia el mapeo en `clusters/mgmt.yaml` y la URL del ingress |
-| Spokes en estado *Unknown* o error TLS | El certificado de la API no valida con el nombre interno | `SPOKE_INSECURE=1 make spokes` (solo laboratorio) y abre un issue contigo mismo para investigarlo |
-| `ComparisonError` en Argo CD | El repo no está en Git o `repoURL` incorrecta | Repite `make set-repo`, push y espera la sincronización |
-| Todo va lento | Repo en `/mnt/c` o poca RAM para WSL | Muévelo a `~/` y revisa `.wslconfig` |
-
-## Hoja de ruta
-
-- [x] Fase 0-1: clústeres reproducibles, Argo CD, app-of-apps, línea base multi-clúster
-- [ ] Fase 2: golden path de aplicación (plantilla, GitHub Actions, GHCR, Trivy, Cosign)
-- [ ] Fase 3: Backstage con Software Templates
-- [ ] Fase 4: Crossplane + CloudNativePG (base de datos self-service)
-- [ ] Fase 5: Kyverno, External Secrets/OpenBao, políticas de red
-- [ ] Fase 6: observabilidad (Prometheus, Grafana, Loki, Tempo)
-- [ ] Fase 7: documentación, ADRs y demo en vídeo
-
 ## Decisiones (ADR resumido)
 
 - **k3d frente a kind**: arranque rápido y menor consumo; kind queda como alternativa si se quiere Cilium.

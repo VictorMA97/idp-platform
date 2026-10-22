@@ -19,6 +19,11 @@ if (( mem_gb < 14 )); then
   warn "Menos de 14 GB visibles. Revisa memory= en %UserProfile%\\.wslconfig (ver docs/wslconfig.example)."
 fi
 
+inst="$(cat /proc/sys/fs/inotify/max_user_instances 2>/dev/null || echo 0)"
+if (( inst < 512 )); then
+  die "fs.inotify.max_user_instances=$inst es demasiado bajo para 3 clústeres. Ejecuta: sudo sysctl -w fs.inotify.max_user_instances=1024 (ver README)"
+fi
+
 # Puertos de host usados por cada clúster (solo se comprueban los que aún no existen)
 declare -A PORTS=( [mgmt]="8080 8443" [dev]="8081 8444" [prod]="8082 8445" )
 if command -v ss >/dev/null 2>&1; then
