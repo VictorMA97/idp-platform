@@ -2,9 +2,10 @@ SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
 
 REPO_URL ?=
+APP_REPO_URL ?=
 HUB := k3d-mgmt
 
-.PHONY: help preflight up clusters argocd spokes set-repo root status argocd-password urls down
+.PHONY: help preflight up clusters argocd spokes set-repo root status argocd-password urls down sample-app
 
 help: ## Muestra esta ayuda
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -47,3 +48,6 @@ urls: ## Muestra las URLs de acceso
 
 down: ## Elimina clústeres y red (destruye todo)
 	@./scripts/down.sh
+
+sample-app: ## Activa la app de ejemplo: make sample-app APP_REPO_URL=...
+	@./scripts/enable-sample-app.sh "$(APP_REPO_URL)"
