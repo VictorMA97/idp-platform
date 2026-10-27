@@ -5,9 +5,10 @@ REPO_URL ?=
 APP_REPO_URL ?=
 MODE ?=
 POLICY_ENV ?= dev
+BACKSTAGE_REPO_URL ?=
 HUB := k3d-mgmt
 
-.PHONY: help preflight up clusters argocd spokes set-repo root status argocd-password urls down sample-app policies-mode test-policies
+.PHONY: help preflight up clusters argocd spokes set-repo root status argocd-password urls down sample-app policies-mode test-policies backstage backstage-secrets
 
 help: ## Muestra esta ayuda
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -47,6 +48,7 @@ urls: ## Muestra las URLs de acceso
 	@echo "Argo CD : http://argocd.localtest.me:8080"
 	@echo "dev     : http://*.localtest.me:8081   (ingress del spoke dev)"
 	@echo "prod    : http://*.localtest.me:8082   (ingress del spoke prod)"
+	@echo "Backstage: http://backstage.localtest.me:8080"
 
 down: ## Elimina clústeres y red (destruye todo)
 	@./scripts/down.sh
@@ -59,3 +61,9 @@ policies-mode: ## Modo de las políticas Kyverno: make policies-mode MODE=audit|
 
 test-policies: ## Prueba las políticas Kyverno: make test-policies [POLICY_ENV=dev|prod]
 	@./scripts/test-policies.sh "$(POLICY_ENV)"
+
+backstage-secrets: ## Crea las credenciales de Backstage en mgmt (OAuth de GitHub, token); no van a Git
+	@./scripts/backstage-secrets.sh
+
+backstage: ## Activa Backstage: make backstage BACKSTAGE_REPO_URL=https://github.com/<usuario>/idp-backstage.git
+	@./scripts/enable-backstage.sh "$(BACKSTAGE_REPO_URL)"
