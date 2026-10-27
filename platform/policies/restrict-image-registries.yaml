@@ -3,9 +3,9 @@
 # con su patrón; esta evita que se cuele una imagen de otro origen (por ejemplo, docker.io).
 #
 # INVARIANTE: todo prefijo autorizado aquí debe estar cubierto por una política de verificación
-# de firma. Por eso el prefijo es el repo concreto y no toda la cuenta de GHCR: si no, cualquier
-# otro paquete sin firmar de la cuenta pasaría. Para autorizar otra app, añade su prefijo aquí
-# Y su patrón en una política de verificación.
+# de firma (verify-image-signatures.yaml). Por eso los prefijos son repos concretos (idp-sample-app)
+# o una convención de nombre (svc-) y no toda la cuenta de GHCR: si no, cualquier otro paquete sin
+# firmar de la cuenta pasaría. Para autorizar otro origen, añade su prefijo aquí Y su patrón allí.
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -24,7 +24,7 @@ spec:
         operations: ['CREATE', 'UPDATE']
   variables:
     - name: allowedPrefixes
-      expression: "['ghcr.io/victorma97/idp-sample-app']"
+      expression: "['ghcr.io/victorma97/idp-sample-app', 'ghcr.io/victorma97/svc-']"
     - name: allImages
       expression: >-
         object.spec.containers.map(c, c.image) +
@@ -32,4 +32,4 @@ spec:
   validations:
     - expression: >-
         variables.allImages.all(i, variables.allowedPrefixes.exists(p, i.startsWith(p)))
-      message: 'Solo se permiten imágenes de orígenes autorizados (ghcr.io/victorma97/idp-sample-app)'
+      message: 'Solo se permiten imágenes de orígenes autorizados (ghcr.io/victorma97/idp-sample-app y ghcr.io/victorma97/svc-*)'

@@ -1,5 +1,12 @@
-# Exige que las imágenes de idp-sample-app estén firmadas (Cosign keyless) por el workflow ci.yaml
-# del repo VictorMA97/idp-sample-app. Una imagen publicada a mano, o por otro repo, no pasa.
+# Exige que las imágenes de la plataforma estén firmadas (Cosign keyless) por el workflow ci.yaml
+# de su propio repo. Una imagen publicada a mano, desde otra cuenta o desde otro workflow, no pasa.
+#
+# Qué imágenes están cubiertas (y, por tanto, pueden ejecutarse en los namespaces de equipo):
+#   - idp-sample-app              la app de ejemplo
+#   - svc-<nombre>                los servicios creados con la plantilla de Backstage
+# La convención de nombre "svc-" es el límite: solo los repos de la cuenta con ese prefijo pueden
+# producir imágenes aceptadas. Si autorizas otro origen, añade su patrón AQUÍ y su prefijo en
+# restrict-image-registries.yaml (invariante: todo prefijo autorizado debe estar cubierto aquí).
 #
 # Solo se verifica la FIRMA. La attestation del SBOM no se exige a propósito: Kyverno tiene un
 # fallo abierto con attestations de Cosign v3 (kyverno/kyverno#16678). La firma sí verifica bien.
@@ -28,15 +35,17 @@ spec:
         operations: ['CREATE', 'UPDATE']
   matchImageReferences:
     - glob: 'ghcr.io/victorma97/idp-sample-app*'
+    - glob: 'ghcr.io/victorma97/svc-*'
   attestors:
     - name: cosign
       cosign:
         keyless:
           identities:
             - issuer: 'https://token.actions.githubusercontent.com'
-              # Identidad exacta del workflow que firma (acepta main o master)
-              subjectRegExp: '^https://github\.com/VictorMA97/idp-sample-app/\.github/workflows/ci\.yaml@refs/heads/(main|master)$'
+              # Identidad exacta del workflow que firma: propietario, repo (idp-sample-app o svc-*),
+              # fichero ci.yaml y rama main o master. Un fork o una rama de trabajo no pasan.
+              subjectRegExp: '^https://github\.com/VictorMA97/(idp-sample-app|svc-[a-z0-9-]+)/\.github/workflows/ci\.yaml@refs/heads/(main|master)$'
   validations:
     - expression: >-
         images.containers.map(image, verifyImageSignatures(image, [attestors.cosign])).all(e, e > 0)
-      message: 'La imagen no está firmada por el pipeline de idp-sample-app'
+      message: 'La imagen no está firmada por el pipeline de su repositorio (idp-sample-app o svc-*)'
