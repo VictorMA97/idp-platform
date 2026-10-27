@@ -42,6 +42,8 @@ log "Casos de prueba (dry-run en $ENVNAME/$NS)"
 probar registro-ajeno  "docker.io/library/nginx:1.27"              rechazado
 probar otro-repo-ghcr  "ghcr.io/victorma97/otro-repo:1.0"          rechazado
 probar tag-latest      "ghcr.io/victorma97/idp-sample-app:latest"  rechazado
+# Cumple el prefijo svc- pero no existe ni está firmada: debe rechazarla la verificación de firma
+probar svc-sin-firma   "ghcr.io/victorma97/svc-prueba-sin-firma:1.0" rechazado
 
 current="$($K -n "$NS" get deploy "sample-app-$ENVNAME" \
   -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || true)"

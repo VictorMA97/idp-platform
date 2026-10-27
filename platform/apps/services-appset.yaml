@@ -1,0 +1,61 @@
+# Despliega los servicios creados con la plantilla de Backstage en cada spoke (dev y prod).
+#
+# Cómo funciona: cada servicio se registra con UN fichero en platform/services/<svc>.yaml
+# (lo añade la plantilla de Backstage mediante un pull request que tú revisas y aceptas).
+# Este ApplicationSet cruza esos ficheros con los clústeres spoke registrados y crea una
+# aplicación por servicio y entorno: svc-<nombre>-dev y svc-<nombre>-prod.
+#
+# Las imágenes que se despliegan las escribe el CI de cada servicio en su propio
+# chart/values-<env>.yaml (por digest). Kyverno rechaza en el clúster cualquier imagen que no
+# esté firmada por el workflow de ese repo (ver platform/policies/).
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: services
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - matrix:
+        generators:
+          # 1) un elemento por cada fichero platform/services/*.yaml (campos: service, repoURL)
+          - git:
+              repoURL: __REPO_URL__  # idp:repo-url
+              revision: HEAD
+              files:
+                - path: platform/services/*.yaml
+          # 2) un elemento por cada spoke registrado
+          #    Los nombres de los campos del fichero (service, repoURL) no deben coincidir con los
+          #    del generador de clústeres (name, server, metadata...), o uno pisaría al otro.
+          - clusters:
+              selector:
+                matchLabels:
+                  idp.dev/role: spoke
+  template:
+    metadata:
+      name: '{{.service}}-{{.metadata.labels.env}}'
+    spec:
+      project: default
+      source:
+        repoURL: '{{.repoURL}}'
+        targetRevision: HEAD
+        path: chart
+        helm:
+          valueFiles:
+            - values.yaml
+            - 'values-{{.metadata.labels.env}}.yaml'
+      destination:
+        server: '{{.server}}'
+        namespace: team-demo
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        # El namespace lo crea la línea base (baseline-<env>); si esta app llega antes, reintenta
+        retry:
+          limit: 5
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 2m

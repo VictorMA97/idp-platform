@@ -18,3 +18,9 @@ Login con GitHub; credenciales en el Secret `backstage-secrets` (`make backstage
 Pasos y limitaciones en `docs/backstage.md`.
 - Kyverno no está en mgmt: la firma de la imagen de Backstage no se verifica al admitir el pod.
 - Estado: validado localmente; **sin ejecutar aún en el clúster real**.
+
+## Golden path (Fase 3b)
+- `platform/services/svc-*.yaml` los crea Backstage por PR; el ApplicationSet `services` los recorre.
+  No usar el campo `name` en esos ficheros (colisiona en el generador matrix): son `service` y `repoURL`.
+- Kyverno acepta `idp-sample-app` y `svc-*`. Mantener el invariante entre las dos políticas.
+- Ver `docs/golden-path.md`.
