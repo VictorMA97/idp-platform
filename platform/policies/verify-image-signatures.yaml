@@ -1,0 +1,42 @@
+# Exige que las imágenes de idp-sample-app estén firmadas (Cosign keyless) por el workflow ci.yaml
+# del repo VictorMA97/idp-sample-app. Una imagen publicada a mano, o por otro repo, no pasa.
+#
+# Solo se verifica la FIRMA. La attestation del SBOM no se exige a propósito: Kyverno tiene un
+# fallo abierto con attestations de Cosign v3 (kyverno/kyverno#16678). La firma sí verifica bien.
+# El SBOM se comprueba en el workflow promote.yaml con la CLI de cosign.
+#
+# Se aplica solo a namespaces de equipo (los que llevan la etiqueta idp.dev/team).
+apiVersion: policies.kyverno.io/v1
+kind: ImageValidatingPolicy
+metadata:
+  name: verify-image-signatures
+spec:
+  validationActions: [Audit]  # idp:policy-mode
+  # Si Kyverno no responde, se rechaza la creación de pods en los namespaces de equipo
+  failurePolicy: Fail
+  webhookConfiguration:
+    timeoutSeconds: 30
+  matchConstraints:
+    namespaceSelector:
+      matchExpressions:
+        - key: idp.dev/team
+          operator: Exists
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        resources: ['pods']
+        operations: ['CREATE', 'UPDATE']
+  matchImageReferences:
+    - glob: 'ghcr.io/victorma97/idp-sample-app*'
+  attestors:
+    - name: cosign
+      cosign:
+        keyless:
+          identities:
+            - issuer: 'https://token.actions.githubusercontent.com'
+              # Identidad exacta del workflow que firma (acepta main o master)
+              subjectRegExp: '^https://github\.com/VictorMA97/idp-sample-app/\.github/workflows/ci\.yaml@refs/heads/(main|master)$'
+  validations:
+    - expression: >-
+        images.containers.map(image, verifyImageSignatures(image, [attestors.cosign])).all(e, e > 0)
+      message: 'La imagen no está firmada por el pipeline de idp-sample-app'

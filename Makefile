@@ -3,9 +3,11 @@ SHELL := /usr/bin/env bash
 
 REPO_URL ?=
 APP_REPO_URL ?=
+MODE ?=
+POLICY_ENV ?= dev
 HUB := k3d-mgmt
 
-.PHONY: help preflight up clusters argocd spokes set-repo root status argocd-password urls down sample-app
+.PHONY: help preflight up clusters argocd spokes set-repo root status argocd-password urls down sample-app policies-mode test-policies
 
 help: ## Muestra esta ayuda
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -51,3 +53,9 @@ down: ## Elimina clústeres y red (destruye todo)
 
 sample-app: ## Activa la app de ejemplo: make sample-app APP_REPO_URL=...
 	@./scripts/enable-sample-app.sh "$(APP_REPO_URL)"
+
+policies-mode: ## Modo de las políticas Kyverno: make policies-mode MODE=audit|deny
+	@./scripts/policies-mode.sh "$(MODE)"
+
+test-policies: ## Prueba las políticas Kyverno: make test-policies [POLICY_ENV=dev|prod]
+	@./scripts/test-policies.sh "$(POLICY_ENV)"

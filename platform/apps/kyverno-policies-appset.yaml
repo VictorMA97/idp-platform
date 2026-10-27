@@ -1,0 +1,41 @@
+# Despliega las políticas de platform/policies en cada spoke.
+# Depende de que Kyverno (y sus CRD) estén instalados: si las políticas llegan antes,
+# Argo CD reintenta hasta que los CRD existan.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: kyverno-policies
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            idp.dev/role: spoke
+  template:
+    metadata:
+      name: 'kyverno-policies-{{.name}}'
+    spec:
+      project: default
+      source:
+        repoURL: __REPO_URL__  # idp:repo-url
+        targetRevision: HEAD
+        path: platform/policies
+      destination:
+        server: '{{.server}}'
+        namespace: kyverno
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          # No falla la validación previa si los CRD de Kyverno aún no existen
+          - SkipDryRunOnMissingResource=true
+        retry:
+          limit: 10
+          backoff:
+            duration: 15s
+            factor: 2
+            maxDuration: 3m

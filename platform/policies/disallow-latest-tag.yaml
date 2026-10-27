@@ -1,0 +1,27 @@
+# Prohíbe imágenes sin tag o con ":latest": un tag móvil impide saber qué se está ejecutando.
+# Se acepta cualquier imagen fijada por digest (@sha256:...), como las que despliega el pipeline.
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: disallow-latest-tag
+spec:
+  validationActions: [Audit]  # idp:policy-mode
+  matchConstraints:
+    namespaceSelector:
+      matchExpressions:
+        - key: idp.dev/team
+          operator: Exists
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        resources: ['pods']
+        operations: ['CREATE', 'UPDATE']
+  variables:
+    - name: allImages
+      expression: >-
+        object.spec.containers.map(c, c.image) +
+        (has(object.spec.initContainers) ? object.spec.initContainers.map(c, c.image) : [])
+  validations:
+    - expression: >-
+        variables.allImages.all(i, i.contains('@sha256:') || (i.contains(':') && !i.endsWith(':latest')))
+      message: 'Las imágenes deben llevar un tag distinto de "latest" o estar fijadas por digest'

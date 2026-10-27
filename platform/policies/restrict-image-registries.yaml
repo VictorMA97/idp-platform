@@ -1,0 +1,35 @@
+# Solo se permiten imágenes de orígenes autorizados en los namespaces de equipo.
+# Complementa a verify-image-signatures: esa política solo verifica las imágenes que coinciden
+# con su patrón; esta evita que se cuele una imagen de otro origen (por ejemplo, docker.io).
+#
+# INVARIANTE: todo prefijo autorizado aquí debe estar cubierto por una política de verificación
+# de firma. Por eso el prefijo es el repo concreto y no toda la cuenta de GHCR: si no, cualquier
+# otro paquete sin firmar de la cuenta pasaría. Para autorizar otra app, añade su prefijo aquí
+# Y su patrón en una política de verificación.
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: restrict-image-registries
+spec:
+  validationActions: [Audit]  # idp:policy-mode
+  matchConstraints:
+    namespaceSelector:
+      matchExpressions:
+        - key: idp.dev/team
+          operator: Exists
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        resources: ['pods']
+        operations: ['CREATE', 'UPDATE']
+  variables:
+    - name: allowedPrefixes
+      expression: "['ghcr.io/victorma97/idp-sample-app']"
+    - name: allImages
+      expression: >-
+        object.spec.containers.map(c, c.image) +
+        (has(object.spec.initContainers) ? object.spec.initContainers.map(c, c.image) : [])
+  validations:
+    - expression: >-
+        variables.allImages.all(i, variables.allowedPrefixes.exists(p, i.startsWith(p)))
+      message: 'Solo se permiten imágenes de orígenes autorizados (ghcr.io/victorma97/idp-sample-app)'

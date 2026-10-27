@@ -1,0 +1,53 @@
+# Instala Kyverno en cada spoke (dev y prod): la admisión se hace en el clúster donde corren las cargas.
+# Chart y app fijados: chart 3.9.2 = Kyverno v1.19.2. Súbelos de forma deliberada, no automática.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: kyverno
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            idp.dev/role: spoke
+  template:
+    metadata:
+      name: 'kyverno-{{.name}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://kyverno.github.io/kyverno/
+        chart: kyverno
+        targetRevision: 3.9.2
+        helm:
+          valuesObject:
+            # Laboratorio: una réplica por controlador (en producción real, 3 para alta disponibilidad)
+            admissionController:
+              replicas: 1
+            backgroundController:
+              replicas: 1
+            reportsController:
+              replicas: 1
+            # No se usan políticas de limpieza: se ahorra un controlador
+            cleanupController:
+              enabled: false
+      destination:
+        server: '{{.server}}'
+        namespace: kyverno
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          # Los CRD de Kyverno son demasiado grandes para el "apply" de cliente
+          - ServerSideApply=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 2m
