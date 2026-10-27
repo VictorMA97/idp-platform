@@ -42,11 +42,17 @@ Con la app de ejemplo ya desplegada caben muchos servicios, pero no infinitos.
 Borra `platform/services/svc-<nombre>.yaml` de `idp-platform` (el ApplicationSet poda sus apps) y
 elimina el repo y la entrada del catálogo a mano.
 
-## Sin probar en el entorno real
+## Comprobado de punta a punta
 
-- La ejecución real del scaffolder con tu token de usuario (se probó el renderizado de la plantilla con
-  los filtros y acciones reales, no las llamadas a GitHub).
-- El comportamiento de Argo CD con `platform/services/` sin ningún fichero `.yaml` (solo hay README).
-  Si el ApplicationSet `services` da error, crea un servicio de prueba o avísame.
-- Kyverno con una imagen real de `svc-*`.
-- Los Helm templates se validaron con una aproximación en Go, además de `helm lint`.
+Con el servicio `svc-test`: la plantilla crea el repo con el token del usuario, el CI construye, escanea y
+firma, Kyverno (modo Deny) admite la imagen, y Argo CD despliega `svc-test-dev` y `svc-test-prod`.
+
+## Detalles a tener en cuenta
+
+- **Consentimiento de GitHub:** el formulario pide `repo`, `workflow`, `public_repo` y otros. Si crear el
+  repo da 404, el token solo tiene `read:user`: revoca la app, cierra sesión, entra de nuevo y acepta.
+- **Nombre del repo:** debe ser `svc-` + minúsculas, números y guiones (sin guion final). Si no, el
+  formulario no avanza ("Form validation failed" en la consola).
+- **prod:** `values-prod.yaml` empieza sin imagen; la rellena el workflow manual `promote-to-prod` del repo del
+  servicio. En la prueba, `svc-test-prod` tardó en sincronizar y acabó funcionando; no se identificó la causa.
+- **Aviso de la consola** `WebSocket /api/signals failed`: inofensivo.

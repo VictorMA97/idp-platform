@@ -99,9 +99,8 @@ producción contra un PostgreSQL real, también con el sistema de ficheros en so
 redirige a GitHub con la URL de retorno correcta; el catálogo carga las 9 entidades sin errores; los
 scripts pasan `shellcheck` y el de secretos se probó con un `kubectl` simulado.
 
-**No comprobado:** la construcción de la imagen (no hay Docker en mi entorno), el login completo con
-tu cuenta de GitHub, el chart con `helm` real (lo renderizé con un arnés propio; el CI hace
-`helm lint` y `helm template`) y el despliegue en el clúster.
+**Después se comprobó en el clúster real:** build, despliegue, login con GitHub y creación de un servicio
+con la plantilla (ver `golden-path.md`).
 
 ## Limitaciones
 
@@ -112,6 +111,20 @@ tu cuenta de GitHub, el chart con `helm` real (lo renderizé con un arnés propi
 - **Cambiar usuarios** (`catalog/org.yaml`) obliga a reconstruir la imagen: el fichero va dentro.
 - **Imágenes base sin fijar por digest:** `node:24-trixie-slim` y `postgres:17-alpine`. Trivy las
   escanea en cada ejecución, pero conviene fijarlas.
-- **Sin plantillas de software (scaffolder) todavía.** Un servicio nuevo no pasaría la política de
-  firma actual, que acepta solo `idp-sample-app`. Hay que generalizarla antes (fase 3b).
+- **Plantillas:** ya hay una (`python-service`, fase 3b); ver `golden-path.md`. Va dentro de la imagen.
 - Una réplica de Backstage y de PostgreSQL (laboratorio).
+
+## Problemas conocidos (ya resueltos, por si reaparecen)
+
+- **Página en blanco tras el login:** el CSP de Backstage fuerza HTTPS. Se desactiva con
+  `backend.csp.upgrade-insecure-requests: false` porque el acceso es por HTTP.
+- **`globalThis.crypto.randomUUID is not a function`:** esa función solo existe en HTTPS o `localhost`.
+  `packages/app/src/polyfills.ts` la sustituye. Si pasas a HTTPS, se puede quitar.
+- **`WebSocket ... /api/signals failed` en la consola:** inofensivo. El backend de señales solo acepta
+  WebSockets tras la primera petición HTTP; el cliente reintenta. Las notificaciones funcionan igual.
+- **`ENOTFOUND backstage-postgres` al arrancar:** el pod arrancaba antes que la base de datos. El
+  initContainer `wait-for-postgres` y el `startupProbe` lo evitan.
+- **Crear repos desde la plantilla da 404:** el token de usuario solo tenía `read:user`. Revoca la app en
+  github.com/settings/applications, cierra sesión y vuelve a entrar para repetir el consentimiento.
+  Se comprueba con `curl -sI -H "Authorization: Bearer $T" https://api.github.com/user` (cabecera
+  `x-oauth-scopes`). Los permisos pedidos incluyen `repo` completo (valor por defecto de Backstage).
