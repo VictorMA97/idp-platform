@@ -1,0 +1,29 @@
+# Aplica las políticas de platform/policies-mgmt en mgmt (solo afectan al namespace backstage).
+# Depende de que Kyverno (kyverno-mgmt) y sus CRD estén instalados: si llegan antes, Argo CD reintenta.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kyverno-policies-mgmt
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/VictorMA97/idp-platform.git  # idp:repo-url
+    targetRevision: HEAD
+    path: platform/policies-mgmt
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      # No falla la validación previa si los CRD de Kyverno aún no existen
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 15s
+        factor: 2
+        maxDuration: 3m

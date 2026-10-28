@@ -104,9 +104,7 @@ con la plantilla (ver `golden-path.md`).
 
 ## Limitaciones
 
-- **Kyverno no está en mgmt.** La imagen de Backstage se firma en CI y se despliega por digest, pero
-  el clúster no verifica la firma al admitir el pod, como sí hace en dev y prod. Extender Kyverno a
-  mgmt es un paso posterior.
+- **Kyverno en mgmt:** desde la fase 5b verifica la firma de la imagen de Backstage (ver `kyverno.md`).
 - **Los datos de PostgreSQL** están en un volumen local: se pierden con `make down`.
 - **Cambiar usuarios** (`catalog/org.yaml`) obliga a reconstruir la imagen: el fichero va dentro.
 - **Imágenes base sin fijar por digest:** `node:24-trixie-slim` y `postgres:17-alpine`. Trivy las

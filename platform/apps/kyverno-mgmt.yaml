@@ -1,0 +1,52 @@
+# Instala Kyverno en el clúster de gestión (mgmt), donde viven Argo CD y Backstage.
+# En dev y prod lo hace el ApplicationSet kyverno-appset.yaml (recorre los spokes); mgmt no es un
+# spoke, así que lleva su propia Application.
+# Chart y app fijados: chart 3.9.2 = Kyverno v1.19.2. Deben coincidir con los de los spokes.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kyverno-mgmt
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://kyverno.github.io/kyverno/
+    chart: kyverno
+    targetRevision: 3.9.2
+    helm:
+      valuesObject:
+        # Laboratorio: una réplica por controlador (en producción real, 3 para alta disponibilidad)
+        admissionController:
+          replicas: 1
+        backgroundController:
+          replicas: 1
+        reportsController:
+          replicas: 1
+        # No se usan políticas de limpieza: se ahorra un controlador
+        cleanupController:
+          enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+  # Kyverno añade metadatos vacíos (annotations y labels) a sus CRD y Argo CD los ve como diferencia
+  # permanente (OutOfSync). Se ignoran: no afectan al funcionamiento.
+  ignoreDifferences:
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      jsonPointers:
+        - /metadata/annotations
+        - /metadata/labels
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # Los CRD de Kyverno son demasiado grandes para el "apply" de cliente
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m

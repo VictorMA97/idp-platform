@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 # Prueba las políticas de Kyverno en un spoke con peticiones "dry-run" de servidor:
 # pasan por los webhooks de admisión pero no crean nada.
-# Uso: scripts/test-policies.sh [dev|prod]      (por defecto, dev)
+# Uso: scripts/test-policies.sh [dev|prod|mgmt]      (por defecto, dev)
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 need kubectl
 ENVNAME="${1:-dev}"
-[[ "$ENVNAME" == "dev" || "$ENVNAME" == "prod" ]] || die "El entorno debe ser dev o prod"
+# mgmt tiene sus propias políticas y casos de prueba
+if [[ "$ENVNAME" == "mgmt" ]]; then
+  exec "$(dirname "${BASH_SOURCE[0]}")/test-policies-mgmt.sh"
+fi
+[[ "$ENVNAME" == "dev" || "$ENVNAME" == "prod" ]] || die "El entorno debe ser dev, prod o mgmt"
 C="$(ctx "$ENVNAME")"
 NS="team-demo"
 K="kubectl --context $C"

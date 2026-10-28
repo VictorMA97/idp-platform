@@ -1,0 +1,36 @@
+# Solo se permiten en el namespace backstage la imagen de Backstage y la de PostgreSQL.
+#
+# EXCEPCIÓN al invariante de dev y prod (todo prefijo autorizado debe estar cubierto por una
+# verificación de firma): "postgres:" es la imagen oficial de Docker Hub, que no firmamos nosotros,
+# y por eso no se verifica. Se autoriza por nombre y se confía en Docker Hub; para endurecerlo,
+# fija la imagen por digest en el chart de Backstage.
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: restrict-image-registries
+spec:
+  validationActions: [Audit]  # idp:policy-mode
+  matchConstraints:
+    namespaceSelector:
+      # Solo el namespace de Backstage (la etiqueta kubernetes.io/metadata.name la pone Kubernetes
+      # y no se puede cambiar). Argo CD, Kyverno y kube-system no se tocan.
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: ['backstage']
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        resources: ['pods']
+        operations: ['CREATE', 'UPDATE']
+  variables:
+    - name: allowedPrefixes
+      expression: "['ghcr.io/victorma97/idp-backstage', 'postgres:']"
+    - name: allImages
+      expression: >-
+        object.spec.containers.map(c, c.image) +
+        (has(object.spec.initContainers) ? object.spec.initContainers.map(c, c.image) : [])
+  validations:
+    - expression: >-
+        variables.allImages.all(i, variables.allowedPrefixes.exists(p, i.startsWith(p)))
+      message: 'Solo se permiten la imagen de Backstage (ghcr.io/victorma97/idp-backstage) y la de PostgreSQL'

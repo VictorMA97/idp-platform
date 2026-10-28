@@ -1,8 +1,8 @@
 # Kyverno: verificación de firmas y guardarraíles
 
-Kyverno corre en **cada spoke** (dev y prod), porque la admisión se decide en el clúster donde
-se crean los pods. Se despliega por GitOps con dos ApplicationSets que recorren los spokes
-registrados.
+Kyverno corre en **cada clúster donde hay cargas que proteger**: dev y prod (spokes) y mgmt (donde
+vive Backstage), porque la admisión se decide en el clúster donde se crean los pods. En los spokes se
+despliega con dos ApplicationSets; en mgmt, con dos Applications propias (ver "Kyverno en mgmt").
 
 ## Piezas
 
@@ -39,6 +39,29 @@ política de verificación. Si autorizas otra app, añade las dos cosas.
 4. **Solo cuando la imagen firmada pase en Audit:** `make policies-mode MODE=deny`, commit y push.
    Repite `make test-policies`: ahora debe rechazar nginx, el repo ajeno y `:latest`, y admitir la
    imagen firmada. Para volver atrás: `make policies-mode MODE=audit`.
+
+## Kyverno en mgmt (Backstage)
+
+| Fichero | Qué hace |
+|---|---|
+| `platform/apps/kyverno-mgmt.yaml` | Instala el mismo chart (3.9.2) en mgmt. Ignora los metadatos vacíos de los CRD (si no, Argo CD los ve siempre como OutOfSync) |
+| `platform/apps/kyverno-policies-mgmt.yaml` | Aplica `platform/policies-mgmt/`; lleva el marcador `# idp:repo-url` |
+| `platform/policies-mgmt/` | Las mismas tres políticas, acotadas al namespace `backstage` |
+
+- **Alcance:** solo el namespace `backstage` (selector `kubernetes.io/metadata.name`). Argo CD, Kyverno y
+  `kube-system` no se tocan.
+- **Firma:** la imagen de Backstage debe estar firmada por el `ci.yaml` de `VictorMA97/idp-backstage` en
+  `main`/`master`.
+- **Excepción documentada:** en el namespace también corre PostgreSQL (`postgres:17-alpine`, de Docker
+  Hub). Se autoriza por nombre (`postgres:`) y no se verifica ninguna firma, porque no es nuestra. Para
+  endurecerlo, fija esa imagen por digest en el chart de Backstage.
+- **Modo:** nace en Audit. `make policies-mode MODE=deny TARGET=mgmt` (TARGET: `spokes` por defecto,
+  `mgmt` o `all`) y `make test-policies POLICY_ENV=mgmt`. Las pruebas usan un pod que cumple Pod Security
+  "restricted" y comprueban que el rechazo lo hace Kyverno.
+- **Riesgo (`failurePolicy: Fail`):** si Kyverno no está listo, Backstage no puede crear pods. Tras
+  reiniciar Docker, Kyverno y Backstage arrancan a la vez; si Backstage queda bloqueado, espera a que
+  Kyverno esté en marcha o pasa a audit: `make policies-mode MODE=audit TARGET=mgmt`, commit y push.
+- **Sin cubrir:** las imágenes de Argo CD y de Kyverno mismo no se verifican (son de terceros).
 
 ## Limitaciones conocidas
 

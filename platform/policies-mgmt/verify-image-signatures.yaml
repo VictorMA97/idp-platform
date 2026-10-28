@@ -1,0 +1,44 @@
+# Exige que la imagen de Backstage esté firmada (Cosign keyless) por el workflow ci.yaml del repo
+# VictorMA97/idp-backstage, en main o master. Equivale a verify-image-signatures de dev y prod, pero
+# en mgmt y solo para el namespace backstage.
+#
+# Solo se verifica la FIRMA (la attestation del SBOM no, por kyverno/kyverno#16678).
+# Las imágenes de PostgreSQL no coinciden con matchImageReferences y esta política no las evalúa:
+# las acota restrict-image-registries.
+apiVersion: policies.kyverno.io/v1
+kind: ImageValidatingPolicy
+metadata:
+  name: verify-image-signatures
+spec:
+  validationActions: [Audit]  # idp:policy-mode
+  # Si Kyverno no responde, se rechaza la creación de pods en el namespace backstage
+  failurePolicy: Fail
+  webhookConfiguration:
+    timeoutSeconds: 30
+  matchConstraints:
+    namespaceSelector:
+      # Solo el namespace de Backstage (la etiqueta kubernetes.io/metadata.name la pone Kubernetes
+      # y no se puede cambiar). Argo CD, Kyverno y kube-system no se tocan.
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: ['backstage']
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        resources: ['pods']
+        operations: ['CREATE', 'UPDATE']
+  matchImageReferences:
+    - glob: 'ghcr.io/victorma97/idp-backstage*'
+  attestors:
+    - name: cosign
+      cosign:
+        keyless:
+          identities:
+            - issuer: 'https://token.actions.githubusercontent.com'
+              # Identidad exacta del workflow que firma: propietario, repo, fichero ci.yaml y rama.
+              subjectRegExp: '^https://github\.com/VictorMA97/idp-backstage/\.github/workflows/ci\.yaml@refs/heads/(main|master)$'
+  validations:
+    - expression: >-
+        images.containers.map(image, verifyImageSignatures(image, [attestors.cosign])).all(e, e > 0)
+      message: 'La imagen no está firmada por el pipeline de idp-backstage'
