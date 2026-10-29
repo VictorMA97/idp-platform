@@ -171,6 +171,7 @@ abre en este repo. El servicio aparece solo en el catálogo en unos 5 minutos. D
 | `make policies-mode MODE=audit\|deny [TARGET=spokes\|mgmt\|all]` | Modo de las políticas (por defecto, dev y prod) |
 | `make test-policies [POLICY_ENV=dev\|prod\|mgmt]` | Prueba las políticas con peticiones dry-run |
 | `make status` / `make argocd-password` / `make urls` | Estado, contraseña de Argo CD, URLs |
+| `make rollback` (alias `make rollout`) | Deshace los cambios de la puesta en marcha en el repo y **destruye** los clústeres, para empezar de cero |
 | `make down` | **Destruye** clústeres y red |
 
 ## Operación diaria
@@ -184,6 +185,12 @@ abre en este repo. El servicio aparece solo en el catálogo en unos 5 minutos. D
 
 ## Apagar y borrar
 
+- **Empezar de cero:** `make rollback` (alias `make rollout`). Muestra un plan, pide confirmación y:
+  restaura la URL del repo a `__REPO_URL__` (lo que hizo `make set-repo`), borra los ficheros generados por
+  `make sample-app` y `make backstage`, devuelve las políticas a Audit, borra `platform/services/svc-*.yaml` y
+  destruye los clústeres. No hace commit ni push: revisa con `git status`, súbelo y repite las Etapas 1 a 6.
+  No toca los otros repos, los paquetes de GHCR ni GitHub. Opciones: `DRY_RUN=1` (solo mostrar el plan),
+  `FORCE=1` (sin confirmación), `KEEP_CLUSTERS=1`, `KEEP_SERVICES=1`.
 - `make down` elimina los clústeres y la red. **Se pierde todo**, incluidos el Secret `backstage-secrets` y
   los datos de PostgreSQL. Para volver: Etapas 1 a 6. Los repos en GitHub se conservan.
 - Para pausar sin borrar: `k3d cluster stop --all` y `k3d cluster start --all` (comandos estándar de k3d,
