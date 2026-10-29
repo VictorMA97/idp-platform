@@ -11,7 +11,7 @@ kind: ValidatingPolicy
 metadata:
   name: restrict-image-registries
 spec:
-  validationActions: [Audit]  # idp:policy-mode
+  validationActions: [Deny]  # idp:policy-mode
   matchConstraints:
     namespaceSelector:
       matchExpressions:
