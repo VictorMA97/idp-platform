@@ -9,7 +9,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/VictorMA97/idp-platform.git  # idp:repo-url
+    repoURL: __REPO_URL__  # idp:repo-url
     targetRevision: HEAD
     path: platform/apps
   destination:
