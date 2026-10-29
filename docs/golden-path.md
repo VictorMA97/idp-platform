@@ -8,7 +8,7 @@ descripción y equipo, y la plantilla hace todo lo demás.
 1. Backstage genera el código (FastAPI, tests, Dockerfile, chart de Helm, workflows) y **crea el repo
    en GitHub con tu token** (el que autorizas al iniciar sesión, no uno guardado en el clúster).
 2. Abre un **pull request en `idp-platform`** que añade `platform/services/svc-<nombre>.yaml`.
-3. Registra el componente en el catálogo de Backstage.
+3. El componente aparece solo en el catálogo de Backstage (descubrimiento automático de repos `svc-*`, cada 5 minutos).
 4. El CI del repo nuevo construye, escanea (Trivy), genera SBOM, **firma con Cosign** y despliega en dev.
 5. Cuando aceptas el PR, el ApplicationSet `services` crea `svc-<nombre>-dev` y `svc-<nombre>-prod`.
 
@@ -36,6 +36,13 @@ descripción y equipo, y la plantilla hace todo lo demás.
 Cada pod pide 50m CPU / 64Mi y limita 250m / 128Mi; prod usa 2 réplicas. Las cuotas de `team-demo`
 se comparten entre servicios: dev 30 pods, 1 CPU y 1Gi de requests; prod 40 pods, 3 CPU y 3Gi.
 Con la app de ejemplo ya desplegada caben muchos servicios, pero no infinitos.
+
+## Descubrimiento del catálogo
+
+`catalog.providers.github` (en `app-config.yaml` de idp-backstage) busca cada 5 minutos los repos públicos
+`svc-*` de la cuenta con `catalog-info.yaml` en la raíz. Si borras un repo, su entrada desaparece. El
+catálogo se reconstruye solo aunque se pierda la base de datos de Backstage. Usa el `GITHUB_TOKEN` de solo
+lectura del Secret `backstage-secrets`.
 
 ## Eliminar un servicio
 

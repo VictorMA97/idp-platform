@@ -41,7 +41,7 @@ repositorios públicos. Backstage lo exige en la configuración; por ahora no es
 ### 3. Tu identidad en el catálogo
 
 ```bash
-gh api users/<tu-usuario> --jq .node_id
+curl -s https://api.github.com/users/<tu-usuario> | grep node_id     # o: gh api users/<tu-usuario> --jq .node_id
 ```
 
 Pon ese valor en `catalog/org.yaml` del repo `idp-backstage` (sustituye `__GITHUB_NODE_ID__`).
@@ -49,10 +49,11 @@ Si no coincide, el login falla con *unable to resolve user identity*.
 
 ### 4. Repo `idp-backstage`
 
-Crea un repo **público** en GitHub, `idp-backstage`, y sube el contenido de `idp-backstage.zip`:
+Crea un repo **público** en GitHub, `idp-backstage`, y sube el contenido del repo de Backstage
+(rama `main` o `master`):
 
 ```bash
-unzip idp-backstage.zip -d idp-backstage && cd idp-backstage
+cd idp-backstage
 git init -b master && git add -A && git commit -m "Backstage"
 git remote add origin https://github.com/<usuario>/idp-backstage.git && git push -u origin master
 ```
