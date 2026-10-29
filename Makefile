@@ -56,6 +56,7 @@ test-policies: ## Prueba las políticas Kyverno: make test-policies [POLICY_ENV=
 
 backstage-secrets: ## Crea las credenciales de Backstage en mgmt (OAuth de GitHub, token); no van a Git
 	@./scripts/backstage-secrets.sh
+	@kubectl --context $(HUB) -n backstage rollout restart deploy/backstage
 
 backstage: ## Activa Backstage: make backstage BACKSTAGE_REPO_URL=https://github.com/<usuario>/idp-backstage.git
 	@./scripts/enable-backstage.sh "$(BACKSTAGE_REPO_URL)"
