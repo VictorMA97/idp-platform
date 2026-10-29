@@ -78,8 +78,9 @@ Comprobación: `kubectl config get-contexts` muestra `k3d-mgmt`, `k3d-dev` y `k3
 ### Etapa 2. Entregar el control a GitOps
 
 ```bash
+make set-owner OWNER=<usuario>      # tu cuenta de GitHub en las políticas de Kyverno (ghcr.io/<usuario>/...)
 make set-repo REPO_URL=https://github.com/<usuario>/idp-platform.git
-git add -A && git commit -m "Configura repo" && git push
+git add -A && git commit -m "Configura repo y cuenta" && git push
 make root
 make status
 ```
@@ -125,8 +126,24 @@ cuando Backstage ya funcione (Etapa 5): `make policies-mode MODE=deny TARGET=mgm
 
 ### Etapa 5. Backstage
 
-Hacen falta: una OAuth App de GitHub, un token de solo lectura, tu `node_id` de GitHub en el catálogo,
-el repo público `idp-backstage` y el paquete de su imagen en público. Guía paso a paso en `docs/backstage.md`.
+Hacen falta: una OAuth App de GitHub, un token de solo lectura, el repo público `idp-backstage` y el paquete
+de su imagen en público. Guía paso a paso en `docs/backstage.md`.
+
+**Antes de nada, configura tu cuenta en `idp-backstage`** (si no, el login falla con "unable to resolve user identity").
+El script cambia el usuario en el descubrimiento, el catálogo y la plantilla, y escribe tu `node_id` en `catalog/org.yaml`:
+
+```bash
+cd idp-backstage
+./scripts/set-owner.sh <usuario>
+# si no puede consultar la API de GitHub (límite o sin red), te dice cómo repetirlo:
+#   NODE_ID=$(gh api users/<usuario> --jq .node_id) ./scripts/set-owner.sh <usuario>
+git add -A && git commit -m "chore: cuenta y node_id" && git push     # el CI reconstruye la imagen
+```
+
+Usa la misma cuenta que en `make set-owner` de la Etapa 2. El `metadata.name` del usuario en `org.yaml` da igual para
+el login: solo cuenta que `user-id` coincida con tu `node_id`. `./scripts/rollback.sh` de `idp-backstage` devuelve
+el `node_id` al placeholder (la cuenta se queda): repite este paso al empezar de cero.
+
 Resumen del final:
 
 ```bash
@@ -187,7 +204,7 @@ abre en este repo. El servicio aparece solo en el catálogo en unos 5 minutos. D
 
 - **Empezar de cero:** `make rollback` (alias `make rollout`). Muestra un plan, pide confirmación y:
   restaura la URL del repo a `__REPO_URL__` (lo que hizo `make set-repo`), borra los ficheros generados por
-  `make sample-app` y `make backstage`, devuelve las políticas a Audit, quita `idp-sample-app` de las listas permitidas, borra `platform/services/svc-*.yaml` y
+  `make sample-app` y `make backstage`, devuelve las políticas a Audit y quita `idp-sample-app` de las listas permitidas, borra `platform/services/svc-*.yaml` y
   destruye los clústeres. No hace commit ni push: revisa con `git status`, súbelo y repite las Etapas 1 a 6.
   No toca los otros repos, los paquetes de GHCR ni GitHub. Opciones: `DRY_RUN=1` (solo mostrar el plan),
   `FORCE=1` (sin confirmación), `KEEP_CLUSTERS=1`, `KEEP_SERVICES=1`.

@@ -10,7 +10,7 @@ kind: ImageValidatingPolicy
 metadata:
   name: verify-image-signatures
 spec:
-  validationActions: [Audit]  # idp:policy-mode
+  validationActions: [Deny]  # idp:policy-mode
   # Si Kyverno no responde, se rechaza la creación de pods en el namespace backstage
   failurePolicy: Fail
   webhookConfiguration:

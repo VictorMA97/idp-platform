@@ -41,10 +41,11 @@ repositorios públicos. Backstage lo exige en la configuración; por ahora no es
 ### 3. Tu identidad en el catálogo
 
 ```bash
-curl -s https://api.github.com/users/<tu-usuario> | grep node_id     # o: gh api users/<tu-usuario> --jq .node_id
+cd idp-backstage && ./scripts/set-owner.sh <tu-usuario>
 ```
 
-Pon ese valor en `catalog/org.yaml` del repo `idp-backstage` (sustituye `__GITHUB_NODE_ID__`).
+El script escribe tu `node_id` en `catalog/org.yaml` (sustituye `__GITHUB_NODE_ID__`) y ajusta tu cuenta en el
+descubrimiento, el catálogo y la plantilla. Si no puede consultar la API: `NODE_ID=$(gh api users/<tu-usuario> --jq .node_id) ./scripts/set-owner.sh <tu-usuario>`.
 Si no coincide, el login falla con *unable to resolve user identity*.
 
 ### 4. Repo `idp-backstage`

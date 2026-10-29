@@ -9,7 +9,7 @@ MODE ?=
 POLICY_ENV ?= dev
 BACKSTAGE_REPO_URL ?=
 
-.PHONY: help preflight up clusters argocd spokes set-repo root sample-app sample-app-off policies-mode test-policies backstage backstage-secrets status argocd-password urls down
+.PHONY: help preflight up clusters argocd spokes set-repo set-owner root sample-app sample-app-off policies-mode test-policies backstage backstage-secrets status argocd-password urls down
 
 help: ## Muestra esta ayuda
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -38,6 +38,9 @@ set-repo: ## Apunta los manifiestos a tu repo: make set-repo REPO_URL=...
 
 root: ## Aplica la app raíz (app-of-apps) y activa GitOps
 	@./scripts/apply-root.sh
+
+set-owner: ## Cuenta de GitHub autorizada en Kyverno: make set-owner OWNER=<usuario>
+	@./scripts/set-owner.sh "$(OWNER)"
 
 sample-app: ## (Opcional) Activa la app de ejemplo: make sample-app APP_REPO_URL=...
 	@./scripts/enable-sample-app.sh "$(APP_REPO_URL)"
