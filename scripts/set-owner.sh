@@ -8,7 +8,8 @@
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 NEW="${1:-}"
-[[ "$NEW" =~ ^[A-Za-z0-9]([A-Za-z0-9-]{0,37}[A-Za-z0-9])?$ ]] \
+# "<usuario>" es el placeholder de la plantilla (lo usa scripts/rollback.sh)
+[[ "$NEW" == "<usuario>" || "$NEW" =~ ^[A-Za-z0-9]([A-Za-z0-9-]{0,37}[A-Za-z0-9])?$ ]] \
   || die "Uso: scripts/set-owner.sh <usuario-de-github>  (letras, números y guiones)"
 NEW_LC="$(echo "$NEW" | tr '[:upper:]' '[:lower:]')"
 
@@ -32,9 +33,14 @@ FILES=(
 cd "$ROOT_DIR"
 for f in "${FILES[@]}"; do
   [[ -f "$f" ]] || { warn "Falta $f"; continue; }
-  sed -i -E "s#\b${CUR}/#${NEW}/#g; s#\b${CUR_LC}/#${NEW_LC}/#g" "$f"
+  # 1) ghcr.io lleva siempre minúsculas (también escrito como ghcr\.io en regex)
+  sed -i -E "s#(ghcr\\\\?\.io/)${CUR_LC}/#\1${NEW_LC}/#g" "$f"
+  # 2) el resto (github.com, comentarios) conserva las mayúsculas. Se usa (^|no alfanumérico) y no \b
+  #    porque el placeholder <usuario> empieza por un carácter no alfanumérico
+  sed -i -E "s#(^|[^A-Za-z0-9_-])${CUR}/#\1${NEW}/#g" "$f"
+  [[ "$CUR_LC" == "$CUR" ]] || sed -i -E "s#(^|[^A-Za-z0-9_-])${CUR_LC}/#\1${NEW_LC}/#g" "$f"
 done
 log "Cuenta cambiada: $CUR -> $NEW (imágenes en ghcr.io/$NEW_LC/...)"
-left="$(grep -rlE "\b(${CUR}|${CUR_LC})/" "${FILES[@]}" 2>/dev/null || true)"
+left="$(grep -rlE "(^|[^A-Za-z0-9_-])(${CUR}|${CUR_LC})/" "${FILES[@]}" 2>/dev/null || true)"
 [[ -z "$left" ]] || warn "Aún queda '$CUR' en: $left"
 warn "Haz commit y push. Recuerda repetir el cambio en idp-backstage: ./scripts/set-owner.sh $NEW"

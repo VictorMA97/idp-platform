@@ -41,12 +41,14 @@ if [[ "$KEEP_SERVICES" != "1" ]]; then
   shopt -u nullglob
 fi
 
+OWNER_NOW="$(sed -nE 's#.*github..com/([^/]+)/.*#\1#p' platform/policies/verify-image-signatures.yaml 2>/dev/null | head -1)"
 log "Plan de rollback (repo: $ROOT_DIR)"
 show() { local title="$1"; shift; if (( $# )); then printf '  %s\n' "$title"; printf '      %s\n' "$@"; else printf '  %s: nada que hacer\n' "$title"; fi; }
 show "URL del repo -> __REPO_URL__:" "${url_files[@]}"
 show "Ficheros generados a borrar:" "${generated[@]}"
 show "Políticas Deny -> Audit:" "${deny_files[@]}"
 echo "  Políticas: se retira idp-sample-app de las listas permitidas (si estaba)"
+echo "  Cuenta de GitHub en políticas y tests: ${OWNER_NOW:-?} -> <usuario>"
 if [[ "$KEEP_SERVICES" == "1" ]]; then echo "  Servicios svc-*: se conservan (KEEP_SERVICES=1)"; else show "Servicios a borrar:" "${services[@]}"; fi
 if [[ "$KEEP_CLUSTERS" == "1" ]]; then
   echo "  Clústeres: se conservan (KEEP_CLUSTERS=1). Con Git revertido y los clústeres vivos, Argo CD dejará de sincronizar."
@@ -69,6 +71,7 @@ for f in "${url_files[@]}"; do
 done
 for f in "${generated[@]}"; do rm -f "$f"; log "Borrado $f"; done
 "$(dirname "${BASH_SOURCE[0]}")/sample-app-policies.sh" off   # la base solo admite svc-*
+"$(dirname "${BASH_SOURCE[0]}")/set-owner.sh" '<usuario>' >/dev/null || warn "No se pudo restaurar <usuario> en las políticas"
 for f in "${deny_files[@]}"; do
   sed -i '/# idp:policy-mode/ s/validationActions: \[Deny\]/validationActions: [Audit]/' "$f"
   log "Audit en $f"

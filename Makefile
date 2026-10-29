@@ -58,6 +58,9 @@ backstage-secrets: ## Crea las credenciales de Backstage en mgmt (OAuth de GitHu
 	@./scripts/backstage-secrets.sh
 	@kubectl --context $(HUB) -n backstage rollout restart deploy/backstage
 
+rollback: ## Deshace la puesta en marcha para empezar de cero (borra clústeres): make rollback [DRY_RUN=1] [FORCE=1] [KEEP_CLUSTERS=1] [KEEP_SERVICES=1]
+	@./scripts/rollback.sh
+
 backstage: ## Activa Backstage: make backstage BACKSTAGE_REPO_URL=https://github.com/<usuario>/idp-backstage.git
 	@./scripts/enable-backstage.sh "$(BACKSTAGE_REPO_URL)"
 

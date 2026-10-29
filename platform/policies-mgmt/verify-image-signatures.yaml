@@ -1,5 +1,5 @@
 # Exige que la imagen de Backstage esté firmada (Cosign keyless) por el workflow ci.yaml del repo
-# VictorMA97/idp-backstage, en main o master. Equivale a verify-image-signatures de dev y prod, pero
+# <usuario>/idp-backstage, en main o master. Equivale a verify-image-signatures de dev y prod, pero
 # en mgmt y solo para el namespace backstage.
 #
 # Solo se verifica la FIRMA (la attestation del SBOM no, por kyverno/kyverno#16678).
@@ -10,7 +10,7 @@ kind: ImageValidatingPolicy
 metadata:
   name: verify-image-signatures
 spec:
-  validationActions: [Deny]  # idp:policy-mode
+  validationActions: [Audit]  # idp:policy-mode
   # Si Kyverno no responde, se rechaza la creación de pods en el namespace backstage
   failurePolicy: Fail
   webhookConfiguration:
@@ -29,7 +29,7 @@ spec:
         resources: ['pods']
         operations: ['CREATE', 'UPDATE']
   matchImageReferences:
-    - glob: 'ghcr.io/victorma97/idp-backstage*'
+    - glob: 'ghcr.io/<usuario>/idp-backstage*'
   attestors:
     - name: cosign
       cosign:
@@ -37,7 +37,7 @@ spec:
           identities:
             - issuer: 'https://token.actions.githubusercontent.com'
               # Identidad exacta del workflow que firma: propietario, repo, fichero ci.yaml y rama.
-              subjectRegExp: '^https://github\.com/VictorMA97/idp-backstage/\.github/workflows/ci\.yaml@refs/heads/(main|master)$'
+              subjectRegExp: '^https://github\.com/<usuario>/idp-backstage/\.github/workflows/ci\.yaml@refs/heads/(main|master)$'
   validations:
     - expression: >-
         images.containers.map(image, verifyImageSignatures(image, [attestors.cosign])).all(e, e > 0)

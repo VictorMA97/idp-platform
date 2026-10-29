@@ -21,7 +21,7 @@ spec:
         generators:
           # 1) un elemento por cada fichero platform/services/*.yaml (campos: service, repoURL)
           - git:
-              repoURL: https://github.com/victorma97/idp-platform.git  # idp:repo-url
+              repoURL: __REPO_URL__  # idp:repo-url
               revision: HEAD
               files:
                 - path: platform/services/*.yaml

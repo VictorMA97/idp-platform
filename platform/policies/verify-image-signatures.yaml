@@ -18,7 +18,7 @@ kind: ImageValidatingPolicy
 metadata:
   name: verify-image-signatures
 spec:
-  validationActions: [Deny]  # idp:policy-mode
+  validationActions: [Audit]  # idp:policy-mode
   # Si Kyverno no responde, se rechaza la creación de pods en los namespaces de equipo
   failurePolicy: Fail
   webhookConfiguration:
@@ -34,8 +34,7 @@ spec:
         resources: ['pods']
         operations: ['CREATE', 'UPDATE']
   matchImageReferences:
-    - glob: 'ghcr.io/victorma97/idp-sample-app*'  # idp:sample-app
-    - glob: 'ghcr.io/victorma97/svc-*'  # idp:glob-anchor
+    - glob: 'ghcr.io/<usuario>/svc-*'  # idp:glob-anchor
   attestors:
     - name: cosign
       cosign:
@@ -44,7 +43,7 @@ spec:
             - issuer: 'https://token.actions.githubusercontent.com'
               # Identidad exacta del workflow que firma: propietario, repo (svc-*, y idp-sample-app si está activa),
               # fichero ci.yaml y rama main o master. Un fork o una rama de trabajo no pasan.
-              subjectRegExp: '^https://github\.com/VictorMA97/(idp-sample-app|svc-[a-z0-9-]+)/\.github/workflows/ci\.yaml@refs/heads/(main|master)$'  # idp:subject
+              subjectRegExp: '^https://github\.com/<usuario>/(svc-[a-z0-9-]+)/\.github/workflows/ci\.yaml@refs/heads/(main|master)$'  # idp:subject
   validations:
     - expression: >-
         images.containers.map(image, verifyImageSignatures(image, [attestors.cosign])).all(e, e > 0)
