@@ -46,6 +46,7 @@ show() { local title="$1"; shift; if (( $# )); then printf '  %s\n' "$title"; pr
 show "URL del repo -> __REPO_URL__:" "${url_files[@]}"
 show "Ficheros generados a borrar:" "${generated[@]}"
 show "Políticas Deny -> Audit:" "${deny_files[@]}"
+echo "  Políticas: se retira idp-sample-app de las listas permitidas (si estaba)"
 if [[ "$KEEP_SERVICES" == "1" ]]; then echo "  Servicios svc-*: se conservan (KEEP_SERVICES=1)"; else show "Servicios a borrar:" "${services[@]}"; fi
 if [[ "$KEEP_CLUSTERS" == "1" ]]; then
   echo "  Clústeres: se conservan (KEEP_CLUSTERS=1). Con Git revertido y los clústeres vivos, Argo CD dejará de sincronizar."
@@ -67,6 +68,7 @@ for f in "${url_files[@]}"; do
   log "URL restaurada en $f"
 done
 for f in "${generated[@]}"; do rm -f "$f"; log "Borrado $f"; done
+"$(dirname "${BASH_SOURCE[0]}")/sample-app-policies.sh" off   # la base solo admite svc-*
 for f in "${deny_files[@]}"; do
   sed -i '/# idp:policy-mode/ s/validationActions: \[Deny\]/validationActions: [Audit]/' "$f"
   log "Audit en $f"

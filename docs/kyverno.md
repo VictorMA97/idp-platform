@@ -10,7 +10,7 @@ despliega con dos ApplicationSets; en mgmt, con dos Applications propias (ver "K
 |---|---|
 | `platform/apps/kyverno-appset.yaml` | Instala el chart `kyverno` **3.9.2** (Kyverno v1.19.2) en cada spoke |
 | `platform/apps/kyverno-policies-appset.yaml` | Aplica `platform/policies/` en cada spoke |
-| `platform/policies/verify-image-signatures.yaml` | `ImageValidatingPolicy`: la imagen (`idp-sample-app` o `svc-*`) debe estar firmada por el `ci.yaml` de su propio repo (Cosign keyless) |
+| `platform/policies/verify-image-signatures.yaml` | `ImageValidatingPolicy`: la imagen (`svc-*`, y `idp-sample-app` si está activa) debe estar firmada por el `ci.yaml` de su propio repo (Cosign keyless) |
 | `platform/policies/restrict-image-registries.yaml` | `ValidatingPolicy`: solo se admiten imágenes de orígenes autorizados |
 | `platform/policies/disallow-latest-tag.yaml` | `ValidatingPolicy`: sin `:latest` ni imágenes sin tag (el digest basta) |
 
@@ -21,7 +21,8 @@ Las políticas solo afectan a namespaces con la etiqueta `idp.dev/team` (como `t
 
 El pipeline firma con la identidad OIDC del workflow (sin claves). Kyverno comprueba que el
 certificado de la firma tiene como emisor `https://token.actions.githubusercontent.com` y como
-sujeto exactamente `.../(idp-sample-app|svc-<nombre>)/.github/workflows/ci.yaml@refs/heads/(main|master)`.
+sujeto exactamente `.../svc-<nombre>/.github/workflows/ci.yaml@refs/heads/(main|master)`
+(más `idp-sample-app` si activaste la app de ejemplo con `make sample-app`).
 Una imagen publicada a mano, desde otra rama, desde otro workflow o desde otro repo no pasa.
 
 **Invariante:** todo prefijo autorizado en `restrict-image-registries` debe estar cubierto por una
@@ -79,7 +80,7 @@ política de verificación. Si autorizas otra app, añade las dos cosas.
 - **Una réplica por controlador** (laboratorio). En producción real, tres para alta disponibilidad.
 - **Argo CD y los informes:** Kyverno genera muchos recursos de informe. Con pocos pods no importa;
   en un clúster grande conviene excluirlos con `resource.exclusions` en Argo CD.
-- **Identidad fija:** el sujeto de la firma menciona `VictorMA97/idp-sample-app`. Si renombras el
+- **Identidad fija:** el sujeto de la firma menciona `VictorMA97`. Si renombras el
   repo o la cuenta, edita `subjectRegExp` y el glob de la política.
 - Las expresiones CEL se probaron con una implementación de Python, no con la de Kyverno.
 

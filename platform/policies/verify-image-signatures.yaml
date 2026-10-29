@@ -2,8 +2,8 @@
 # de su propio repo. Una imagen publicada a mano, desde otra cuenta o desde otro workflow, no pasa.
 #
 # Qué imágenes están cubiertas (y, por tanto, pueden ejecutarse en los namespaces de equipo):
-#   - idp-sample-app              la app de ejemplo
 #   - svc-<nombre>                los servicios creados con la plantilla de Backstage
+#   - idp-sample-app              solo si activas la app de ejemplo (`make sample-app`)
 # La convención de nombre "svc-" es el límite: solo los repos de la cuenta con ese prefijo pueden
 # producir imágenes aceptadas. Si autorizas otro origen, añade su patrón AQUÍ y su prefijo en
 # restrict-image-registries.yaml (invariante: todo prefijo autorizado debe estar cubierto aquí).
@@ -34,18 +34,17 @@ spec:
         resources: ['pods']
         operations: ['CREATE', 'UPDATE']
   matchImageReferences:
-    - glob: 'ghcr.io/victorma97/idp-sample-app*'
-    - glob: 'ghcr.io/victorma97/svc-*'
+    - glob: 'ghcr.io/victorma97/svc-*'  # idp:glob-anchor
   attestors:
     - name: cosign
       cosign:
         keyless:
           identities:
             - issuer: 'https://token.actions.githubusercontent.com'
-              # Identidad exacta del workflow que firma: propietario, repo (idp-sample-app o svc-*),
+              # Identidad exacta del workflow que firma: propietario, repo (svc-*, y idp-sample-app si está activa),
               # fichero ci.yaml y rama main o master. Un fork o una rama de trabajo no pasan.
-              subjectRegExp: '^https://github\.com/VictorMA97/(idp-sample-app|svc-[a-z0-9-]+)/\.github/workflows/ci\.yaml@refs/heads/(main|master)$'
+              subjectRegExp: '^https://github\.com/VictorMA97/(svc-[a-z0-9-]+)/\.github/workflows/ci\.yaml@refs/heads/(main|master)$'  # idp:subject
   validations:
     - expression: >-
         images.containers.map(image, verifyImageSignatures(image, [attestors.cosign])).all(e, e > 0)
-      message: 'La imagen no está firmada por el pipeline de su repositorio (idp-sample-app o svc-*)'
+      message: 'La imagen no está firmada por el pipeline de su repositorio'

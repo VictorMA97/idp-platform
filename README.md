@@ -12,7 +12,7 @@ CI/CD firmado, despliegue por GitOps en dev y prod y políticas de seguridad ver
 | Argo CD | GitOps: app-of-apps y ApplicationSets | `platform/bootstrap/`, `platform/apps/` |
 | Línea base de los spokes | Namespace `team-demo` con cuotas y NetworkPolicies | `platform/spokes/baseline/` |
 | Kyverno | Solo admite imágenes de la plataforma, firmadas por su propio CI (Cosign keyless) | `platform/policies/` (dev y prod), `platform/policies-mgmt/` (Backstage) |
-| App de ejemplo | Golden path de una app Python | repo `idp-sample-app` |
+| App de ejemplo (opcional) | Golden path de una app Python; no es necesaria para la plataforma | repo `idp-sample-app` |
 | Backstage | Portal: catálogo, plantillas y descubrimiento de servicios | repo `idp-backstage` |
 | Golden path | Crea un servicio `svc-<nombre>` desde Backstage | `docs/golden-path.md` |
 
@@ -21,7 +21,7 @@ CI/CD firmado, despliegue por GitOps en dev y prod y políticas de seguridad ver
 | Repo | Contenido | Quién lo despliega |
 |---|---|---|
 | `idp-platform` (este) | Infraestructura, Argo CD, políticas, scripts | `make` en tu PC |
-| `idp-sample-app` | App de ejemplo con su pipeline | Argo CD, desde `idp-platform` |
+| `idp-sample-app` (opcional) | App de ejemplo con su pipeline | Argo CD, si ejecutas `make sample-app` |
 | `idp-backstage` | Portal Backstage, su pipeline y la plantilla de servicios | Argo CD, desde `idp-platform` |
 
 Los tres deben ser **públicos** (Argo CD lee de ellos sin credenciales) y viven en tu cuenta de GitHub.
@@ -98,9 +98,9 @@ kubectl --context k3d-dev -n team-demo get quota,limitrange,netpol
 
 Las políticas de Kyverno empiezan en modo **Audit**: registran, pero no rechazan nada.
 
-### Etapa 3. App de ejemplo
+### Etapa 3. App de ejemplo (opcional)
 
-Pasos completos en el README de `idp-sample-app`. Resumen:
+La plataforma, Backstage y los servicios `svc-*` funcionan sin ella. Por defecto Kyverno solo admite `svc-*`; `make sample-app` añade la app al ApplicationSet **y** la autoriza en las políticas (`make sample-app-off` lo deshace). Pasos completos en el README de `idp-sample-app`. Resumen:
 
 1. Crea el repo público `idp-sample-app` y sube su contenido; espera a que el workflow `ci` termine en verde.
 2. Haz público el paquete en GHCR (perfil → *Packages* → `idp-sample-app` → *Package settings* → *Change visibility*).
@@ -166,7 +166,7 @@ abre en este repo. El servicio aparece solo en el catálogo en unos 5 minutos. D
 |---|---|
 | `make up` | Preflight, clústeres, Argo CD y registro de spokes |
 | `make set-repo REPO_URL=...` / `make root` | Apunta los manifiestos a tu repo / activa GitOps |
-| `make sample-app APP_REPO_URL=...` | Activa la app de ejemplo |
+| `make sample-app APP_REPO_URL=...` / `make sample-app-off` | (Opcional) activa / desactiva la app de ejemplo, incluida su autorización en Kyverno |
 | `make backstage-secrets` / `make backstage BACKSTAGE_REPO_URL=...` | Credenciales / activa Backstage |
 | `make policies-mode MODE=audit\|deny [TARGET=spokes\|mgmt\|all]` | Modo de las políticas (por defecto, dev y prod) |
 | `make test-policies [POLICY_ENV=dev\|prod\|mgmt]` | Prueba las políticas con peticiones dry-run |
@@ -187,7 +187,7 @@ abre en este repo. El servicio aparece solo en el catálogo en unos 5 minutos. D
 
 - **Empezar de cero:** `make rollback` (alias `make rollout`). Muestra un plan, pide confirmación y:
   restaura la URL del repo a `__REPO_URL__` (lo que hizo `make set-repo`), borra los ficheros generados por
-  `make sample-app` y `make backstage`, devuelve las políticas a Audit, borra `platform/services/svc-*.yaml` y
+  `make sample-app` y `make backstage`, devuelve las políticas a Audit, quita `idp-sample-app` de las listas permitidas, borra `platform/services/svc-*.yaml` y
   destruye los clústeres. No hace commit ni push: revisa con `git status`, súbelo y repite las Etapas 1 a 6.
   No toca los otros repos, los paquetes de GHCR ni GitHub. Opciones: `DRY_RUN=1` (solo mostrar el plan),
   `FORCE=1` (sin confirmación), `KEEP_CLUSTERS=1`, `KEEP_SERVICES=1`.

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Activa la app de ejemplo: genera platform/apps/sample-app-appset.yaml desde la plantilla.
+# Activa la app de ejemplo (OPCIONAL): genera platform/apps/sample-app-appset.yaml desde la plantilla
+# y la autoriza en las políticas de Kyverno de dev/prod. Sin esto, la plataforma solo admite svc-*.
+# Para quitarla: scripts/disable-sample-app.sh
 # Idempotente: se puede repetir con otra URL.
 # Uso: scripts/enable-sample-app.sh https://github.com/<usuario>/idp-sample-app.git
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
@@ -25,6 +27,8 @@ TARGET="$ROOT_DIR/platform/apps/sample-app-appset.yaml"
 
 sed "s|__APP_REPO_URL__|${APP_REPO_URL}|" "$TEMPLATE" > "$TARGET"
 log "Generado ${TARGET#"$ROOT_DIR"/}"
+"$(dirname "${BASH_SOURCE[0]}")/sample-app-policies.sh" on
+log "Políticas de Kyverno: idp-sample-app autorizada (platform/policies)"
 
 warn "Haz commit y push: Argo CD (platform-root) detectará el nuevo ApplicationSet y creará sample-app-dev y sample-app-prod."
 warn "Hasta que el pipeline de la app publique su primera imagen, los pods quedarán en ImagePullBackOff (es lo esperado)."

@@ -45,16 +45,17 @@ probar() {
 log "Casos de prueba (dry-run en $ENVNAME/$NS)"
 probar registro-ajeno  "docker.io/library/nginx:1.27"              rechazado
 probar otro-repo-ghcr  "ghcr.io/victorma97/otro-repo:1.0"          rechazado
-probar tag-latest      "ghcr.io/victorma97/idp-sample-app:latest"  rechazado
+probar tag-latest      "ghcr.io/victorma97/svc-prueba:latest"      rechazado
 # Cumple el prefijo svc- pero no existe ni está firmada: debe rechazarla la verificación de firma
 probar svc-sin-firma   "ghcr.io/victorma97/svc-prueba-sin-firma:1.0" rechazado
 
-current="$($K -n "$NS" get deploy "sample-app-$ENVNAME" \
-  -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || true)"
+# Imagen legítima: la de cualquier pod en ejecución del namespace que venga de ghcr.io/<cuenta>/svc-* (o de la app de ejemplo, si está activa)
+current="$($K -n "$NS" get pods -o jsonpath='{range .items[*]}{.spec.containers[0].image}{"\n"}{end}' 2>/dev/null \
+  | grep -E '^ghcr\.io/victorma97/(svc-|idp-sample-app)' | head -1 || true)"
 if [[ -n "$current" ]]; then
   probar imagen-firmada "$current" admitido
 else
-  warn "No existe el despliegue sample-app-$ENVNAME: se omite el caso de la imagen firmada."
+  warn "No hay ningún pod de un servicio (svc-*) en $NS: se omite el caso de la imagen firmada."
   warn "Sin ese caso no se demuestra que la verificación de firma ACEPTA la imagen legítima."
 fi
 

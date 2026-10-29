@@ -22,7 +22,7 @@ descripción y equipo, y la plantilla hace todo lo demás.
 
 ## Modelo de seguridad
 
-- Kyverno solo admite imágenes de `idp-sample-app` y `svc-*` **firmadas por el `ci.yaml` de su propio repo**
+- Kyverno solo admite imágenes de `svc-*` (y de `idp-sample-app` si activaste la app de ejemplo) **firmadas por el `ci.yaml` de su propio repo**
   en `main`/`master`. Un repo sin el prefijo, un fork o una imagen manual no arrancan (en modo Deny).
 - Invariante: todo prefijo permitido en `restrict-image-registries` debe estar cubierto en
   `verify-image-signatures`.
@@ -39,10 +39,12 @@ Con la app de ejemplo ya desplegada caben muchos servicios, pero no infinitos.
 
 ## Descubrimiento del catálogo
 
-`catalog.providers.github` (en `app-config.yaml` de idp-backstage) busca cada 5 minutos los repos públicos
-`svc-*` de la cuenta con `catalog-info.yaml` en la raíz. Si borras un repo, su entrada desaparece. El
-catálogo se reconstruye solo aunque se pierda la base de datos de Backstage. Usa el `GITHUB_TOKEN` de solo
-lectura del Secret `backstage-secrets`.
+`idp.serviceDiscovery` (en `app-config.yaml` de idp-backstage; código en
+`packages/backend/src/modules/serviceDiscovery.ts`) busca cada 5 minutos los repos públicos `svc-*` de la cuenta
+con `catalog-info.yaml` en la raíz y los registra. Si borras un repo, su entrada desaparece. El catálogo se
+reconstruye solo aunque se pierda la base de datos. Si GitHub falla, no se modifica nada. Usa el `GITHUB_TOKEN` de
+solo lectura (repos públicos) del Secret `backstage-secrets`. No se usa el módulo oficial porque su consulta
+incluye los repos privados de la cuenta y falla con un token que no los cubre.
 
 ## Eliminar un servicio
 

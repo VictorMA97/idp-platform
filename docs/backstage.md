@@ -59,7 +59,7 @@ git remote add origin https://github.com/<usuario>/idp-backstage.git && git push
 ```
 
 - En Settings → Actions, permite también `actions/setup-node` si tienes una lista de acciones
-  permitidas (las demás ya las usa `idp-sample-app`).
+  permitidas.
 - Cuando el CI publique la primera imagen, haz el paquete público: GitHub → tu perfil → Packages →
   `idp-backstage` → Package settings → Change visibility → Public. Sin eso el clúster no puede
   descargarla.
