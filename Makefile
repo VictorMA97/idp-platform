@@ -8,7 +8,7 @@ POLICY_ENV ?= dev
 BACKSTAGE_REPO_URL ?=
 HUB := k3d-mgmt
 
-.PHONY: help preflight up clusters argocd spokes set-repo root status argocd-password urls down sample-app policies-mode test-policies backstage backstage-secrets
+.PHONY: help preflight up clusters argocd spokes set-repo root status argocd-password urls down sample-app policies-mode test-policies backstage backstage-secrets rollback
 
 help: ## Muestra esta ayuda
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -52,8 +52,6 @@ urls: ## Muestra las URLs de acceso
 
 rollback: ## Deshace la puesta en marcha para empezar de cero (borra clústeres): make rollback [DRY_RUN=1] [FORCE=1] [KEEP_CLUSTERS=1] [KEEP_SERVICES=1]
 	@./scripts/rollback.sh
-
-rollout: rollback ## Alias de rollback
 
 down: ## Elimina clústeres y red (destruye todo)
 	@./scripts/down.sh
