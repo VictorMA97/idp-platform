@@ -50,16 +50,21 @@ urls: ## Muestra las URLs de acceso
 	@echo "prod    : http://*.localtest.me:8082   (ingress del spoke prod)"
 	@echo "Backstage: http://backstage.localtest.me:8080"
 
+rollback: ## Deshace la puesta en marcha para empezar de cero (borra clústeres): make rollback [DRY_RUN=1] [FORCE=1] [KEEP_CLUSTERS=1] [KEEP_SERVICES=1]
+	@./scripts/rollback.sh
+
+rollout: rollback ## Alias de rollback
+
 down: ## Elimina clústeres y red (destruye todo)
 	@./scripts/down.sh
 
 sample-app: ## Activa la app de ejemplo: make sample-app APP_REPO_URL=...
 	@./scripts/enable-sample-app.sh "$(APP_REPO_URL)"
 
-policies-mode: ## Modo de las políticas Kyverno: make policies-mode MODE=audit|deny
+policies-mode: ## Modo de las políticas Kyverno: make policies-mode MODE=audit|deny [TARGET=spokes|mgmt|all]
 	@./scripts/policies-mode.sh "$(MODE)"
 
-test-policies: ## Prueba las políticas Kyverno: make test-policies [POLICY_ENV=dev|prod]
+test-policies: ## Prueba las políticas Kyverno: make test-policies [POLICY_ENV=dev|prod|mgmt]
 	@./scripts/test-policies.sh "$(POLICY_ENV)"
 
 backstage-secrets: ## Crea las credenciales de Backstage en mgmt (OAuth de GitHub, token); no van a Git
