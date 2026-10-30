@@ -56,7 +56,6 @@ test-policies: ## Prueba las políticas Kyverno: make test-policies [POLICY_ENV=
 
 backstage-secrets: ## Crea las credenciales de Backstage en mgmt (OAuth de GitHub, token); no van a Git
 	@./scripts/backstage-secrets.sh
-	@kubectl --context $(HUB) -n backstage rollout restart deploy/backstage
 
 rollback: ## Deshace la puesta en marcha para empezar de cero (borra clústeres): make rollback [DRY_RUN=1] [FORCE=1] [KEEP_CLUSTERS=1] [KEEP_SERVICES=1]
 	@./scripts/rollback.sh
