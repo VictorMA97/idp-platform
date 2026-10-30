@@ -66,7 +66,7 @@ Hazlo en este orden. Cada etapa termina con una **comprobación**: no pases a la
 ### Etapa 1. Infraestructura base (unos minutos)
 
 ```bash
-git clone https://github.com/<usuario>/idp-platform.git ~/idp-platform
+git clone https://github.com/$OWNER/idp-platform.git ~/idp-platform
 cd ~/idp-platform
 make up                # preflight + 3 clústeres + Argo CD + registro de spokes
 make argocd-password   # contraseña inicial del usuario admin
@@ -79,7 +79,7 @@ Comprobación: `kubectl config get-contexts` muestra `k3d-mgmt`, `k3d-dev` y `k3
 
 ```bash
 make set-owner OWNER=<usuario>      # tu cuenta de GitHub en las políticas de Kyverno (ghcr.io/<usuario>/...)
-make set-repo REPO_URL=https://github.com/<usuario>/idp-platform.git
+make set-repo REPO_URL=https://github.com/$OWNER/idp-platform.git
 git add -A && git commit -m "Configura repo y cuenta" && git push
 make root
 make status
@@ -105,7 +105,7 @@ La plataforma, Backstage y los servicios `svc-*` funcionan sin ella. Por defecto
 
 1. Crea el repo público `idp-sample-app` y sube su contenido; espera a que el workflow `ci` termine en verde.
 2. Haz público el paquete en GHCR (perfil → *Packages* → `idp-sample-app` → *Package settings* → *Change visibility*).
-3. En este repo: `make sample-app APP_REPO_URL=https://github.com/<usuario>/idp-sample-app.git`, commit y push.
+3. En este repo: `make sample-app APP_REPO_URL=https://github.com/$OWNER/idp-sample-app.git`, commit y push.
 
 Comprobación: <http://sample-app.dev.localtest.me:8081> responde. Prod se activa después con el workflow
 manual `promote-to-prod` del repo de la app: <http://sample-app.prod.localtest.me:8082>.
@@ -148,7 +148,7 @@ Resumen del final:
 
 ```bash
 make backstage-secrets     # pide Client ID, Client Secret y token; no van a Git
-make backstage BACKSTAGE_REPO_URL=https://github.com/<usuario>/idp-backstage.git
+make backstage BACKSTAGE_REPO_URL=https://github.com/$OWNER/idp-backstage.git
 git add -A && git commit -m "Activa Backstage" && git push
 ```
 

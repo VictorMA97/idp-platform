@@ -24,7 +24,7 @@ spec:
         operations: ['CREATE', 'UPDATE']
   variables:
     - name: allowedPrefixes
-      expression: "['ghcr.io/<usuario>/svc-']"  # idp:allowed-prefixes
+      expression: "['ghcr.io/victorma97/svc-']"  # idp:allowed-prefixes
     - name: allImages
       expression: >-
         object.spec.containers.map(c, c.image) +
@@ -32,4 +32,4 @@ spec:
   validations:
     - expression: >-
         variables.allImages.all(i, variables.allowedPrefixes.exists(p, i.startsWith(p)))
-      message: 'Solo se permiten imágenes de orígenes autorizados (ghcr.io/<usuario>/svc-* y los repos autorizados)'
+      message: 'Solo se permiten imágenes de orígenes autorizados (ghcr.io/victorma97/svc-* y los repos autorizados)'
