@@ -5,7 +5,7 @@ request; no hace falta editarlos a mano. Ejemplo:
 
 ```yaml
 service: svc-pagos
-repoURL: https://github.com/<usuario>/svc-pagos.git
+repoURL: https://github.com/victorma97/svc-pagos.git
 ```
 
 Al aceptar el PR, el ApplicationSet `services` (platform/apps/services-appset.yaml) crea

@@ -25,7 +25,7 @@ spec:
         operations: ['CREATE', 'UPDATE']
   variables:
     - name: allowedPrefixes
-      expression: "['ghcr.io/<usuario>/idp-backstage', 'postgres:']"
+      expression: "['ghcr.io/victorma97/idp-backstage', 'postgres:']"
     - name: allImages
       expression: >-
         object.spec.containers.map(c, c.image) +
@@ -33,4 +33,4 @@ spec:
   validations:
     - expression: >-
         variables.allImages.all(i, variables.allowedPrefixes.exists(p, i.startsWith(p)))
-      message: 'Solo se permiten la imagen de Backstage (ghcr.io/<usuario>/idp-backstage) y la de PostgreSQL'
+      message: 'Solo se permiten la imagen de Backstage (ghcr.io/victorma97/idp-backstage) y la de PostgreSQL'
