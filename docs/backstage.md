@@ -57,6 +57,7 @@ Crea un repo **público** en GitHub, `idp-backstage`, y sube el contenido del re
 cd idp-backstage
 git init -b master && git add -A && git commit -m "Backstage"
 git remote add origin https://github.com/<usuario>/idp-backstage.git && git push -u origin master
+# por SSH: git remote add origin git@github.com:<usuario>/idp-backstage.git
 ```
 
 - En Settings → Actions, permite también `actions/setup-node` si tienes una lista de acciones

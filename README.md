@@ -66,7 +66,7 @@ Hazlo en este orden. Cada etapa termina con una **comprobación**: no pases a la
 ### Etapa 1. Infraestructura base (unos minutos)
 
 ```bash
-git clone https://github.com/<usuario>/idp-platform.git ~/idp-platform
+git clone https://github.com/<usuario>/idp-platform.git ~/idp-platform     # o por SSH: git@github.com:<usuario>/idp-platform.git
 cd ~/idp-platform
 make up                # preflight + 3 clústeres + Argo CD + registro de spokes
 make argocd-password   # contraseña inicial del usuario admin
@@ -142,7 +142,7 @@ git add -A && git commit -m "chore: cuenta y node_id" && git push     # el CI re
 
 Usa la misma cuenta que en `make set-owner` de la Etapa 2. El `metadata.name` del usuario en `org.yaml` da igual para
 el login: solo cuenta que `user-id` coincida con tu `node_id`. `./scripts/rollback.sh` de `idp-backstage` devuelve
-el `node_id` al placeholder (la cuenta se queda): repite este paso al empezar de cero.
+el `node_id` y la cuenta a sus placeholders: repite este paso al empezar de cero.
 
 Resumen del final:
 

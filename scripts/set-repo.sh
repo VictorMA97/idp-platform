@@ -5,18 +5,15 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 REPO_URL="${1:-}"
 [[ -n "$REPO_URL" ]] || die "Uso: scripts/set-repo.sh https://github.com/<usuario>/idp-platform.git"
+[[ "$REPO_URL" == *"|"* || "$REPO_URL" == *"&"* ]] && die "La URL contiene caracteres no soportados"
 
-# Argo CD no tiene claves SSH configuradas: se convierte cualquier URL SSH a HTTPS
+# Argo CD no tiene claves SSH configuradas: aunque uses SSH en tu git local, los manifiestos
+# deben llevar la URL HTTPS del repo (público). Se convierte cualquier URL SSH.
 if [[ "$REPO_URL" =~ ^(ssh://)?git@github\.com[:/](.+)$ ]]; then
   REPO_URL="https://github.com/${BASH_REMATCH[2]}"
-  warn "URL SSH convertida a HTTPS: $REPO_URL"
+  warn "URL SSH convertida a HTTPS para Argo CD: $REPO_URL"
 fi
-[[ "$REPO_URL" =~ ^https://github\.com/[^/]+/[^/]+$ ]] \
-  || die "La URL debe tener la forma https://github.com/<usuario>/<repo>"
-
-# Comprueba que el repo es público y accesible sin credenciales
-git ls-remote "$REPO_URL" HEAD >/dev/null 2>&1 \
-  || die "No se puede leer $REPO_URL sin credenciales. ¿Es público y existe?"
+[[ "$REPO_URL" =~ ^https://github\.com/[^/]+/[^/]+$ ]] || die "La URL debe tener la forma https://github.com/<usuario>/<repo>.git (o la SSH equivalente)"
 
 # Las líneas a sustituir llevan el marcador '# idp:repo-url'
 mapfile -t files < <(grep -rl '# idp:repo-url' "$ROOT_DIR/platform" || true)
