@@ -44,14 +44,14 @@ probar() {
 
 log "Casos de prueba (dry-run en $ENVNAME/$NS)"
 probar registro-ajeno  "docker.io/library/nginx:1.27"              rechazado
-probar otro-repo-ghcr  "ghcr.io/victorma97/otro-repo:1.0"          rechazado
-probar tag-latest      "ghcr.io/victorma97/svc-prueba:latest"      rechazado
+probar otro-repo-ghcr  "ghcr.io/<usuario>/otro-repo:1.0"          rechazado
+probar tag-latest      "ghcr.io/<usuario>/svc-prueba:latest"      rechazado
 # Cumple el prefijo svc- pero no existe ni está firmada: debe rechazarla la verificación de firma
-probar svc-sin-firma   "ghcr.io/victorma97/svc-prueba-sin-firma:1.0" rechazado
+probar svc-sin-firma   "ghcr.io/<usuario>/svc-prueba-sin-firma:1.0" rechazado
 
 # Imagen legítima: la de cualquier pod en ejecución del namespace que venga de ghcr.io/<cuenta>/svc-* (o de la app de ejemplo, si está activa)
 current="$($K -n "$NS" get pods -o jsonpath='{range .items[*]}{.spec.containers[0].image}{"\n"}{end}' 2>/dev/null \
-  | grep -E '^ghcr\.io/victorma97/(svc-|idp-sample-app)' | head -1 || true)"
+  | grep -E '^ghcr\.io/<usuario>/(svc-|idp-sample-app)' | head -1 || true)"
 if [[ -n "$current" ]]; then
   probar imagen-firmada "$current" admitido
 else
