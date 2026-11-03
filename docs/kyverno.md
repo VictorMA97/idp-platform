@@ -80,8 +80,10 @@ política de verificación. Si autorizas otra app, añade las dos cosas.
 - **Una réplica por controlador** (laboratorio). En producción real, tres para alta disponibilidad.
 - **Argo CD y los informes:** Kyverno genera muchos recursos de informe. Con pocos pods no importa;
   en un clúster grande conviene excluirlos con `resource.exclusions` en Argo CD.
-- **Identidad fija:** el sujeto de la firma menciona `VictorMA97`. Si renombras el
-  repo o la cuenta, edita `subjectRegExp` y el glob de la política.
+- **Identidad fija:** el sujeto de la firma menciona tu cuenta (`make set-owner` la cambia). La comparación es
+  insensible a mayúsculas (`(?i)`) porque GitHub firma con las mayúsculas reales de tu usuario y `ghcr.io` va en
+  minúsculas; si no, `victorma97` y `VictorMA97` no coincidirían y toda imagen legítima fallaría. Si renombras
+  el repo, edita `subjectRegExp` y el glob de la política.
 - Las expresiones CEL se probaron con una implementación de Python, no con la de Kyverno.
 
 ## Referencias

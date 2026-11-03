@@ -1,5 +1,5 @@
 # Exige que la imagen de Backstage esté firmada (Cosign keyless) por el workflow ci.yaml del repo
-# victorma97/idp-backstage, en main o master. Equivale a verify-image-signatures de dev y prod, pero
+# VictorMA97/idp-backstage, en main o master. Equivale a verify-image-signatures de dev y prod, pero
 # en mgmt y solo para el namespace backstage.
 #
 # Solo se verifica la FIRMA (la attestation del SBOM no, por kyverno/kyverno#16678).
@@ -37,7 +37,8 @@ spec:
           identities:
             - issuer: 'https://token.actions.githubusercontent.com'
               # Identidad exacta del workflow que firma: propietario, repo, fichero ci.yaml y rama.
-              subjectRegExp: '^https://github\.com/victorma97/idp-backstage/\.github/workflows/ci\.yaml@refs/heads/(main|master)$'
+              # (?i): GitHub firma con las mayúsculas reales de tu usuario; los usuarios de GitHub no distinguen mayúsculas.
+              subjectRegExp: '(?i)^https://github\.com/VictorMA97/idp-backstage/\.github/workflows/ci\.yaml@refs/heads/(main|master)$'
   validations:
     - expression: >-
         images.containers.map(image, verifyImageSignatures(image, [attestors.cosign])).all(e, e > 0)
