@@ -5,7 +5,7 @@ kind: ValidatingPolicy
 metadata:
   name: disallow-latest-tag
 spec:
-  validationActions: [Audit]  # idp:policy-mode
+  validationActions: [Deny]  # idp:policy-mode
   matchConstraints:
     namespaceSelector:
       # Solo el namespace de Backstage (la etiqueta kubernetes.io/metadata.name la pone Kubernetes
