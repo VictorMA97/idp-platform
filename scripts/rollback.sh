@@ -70,8 +70,8 @@ for f in "${url_files[@]}"; do
   log "URL restaurada en $f"
 done
 for f in "${generated[@]}"; do rm -f "$f"; log "Borrado $f"; done
-"$(dirname "${BASH_SOURCE[0]}")/sample-app-policies.sh" off   # la base solo admite svc-*
-"$(dirname "${BASH_SOURCE[0]}")/set-owner.sh" '<usuario>' >/dev/null || warn "No se pudo restaurar <usuario> en las políticas"
+"$ROOT_DIR/scripts/sample-app-policies.sh" off   # la base solo admite svc-*
+"$ROOT_DIR/scripts/set-owner.sh" '<usuario>' >/dev/null || warn "No se pudo restaurar <usuario> en las políticas"
 for f in "${deny_files[@]}"; do
   sed -i '/# idp:policy-mode/ s/validationActions: \[Deny\]/validationActions: [Audit]/' "$f"
   log "Audit en $f"
