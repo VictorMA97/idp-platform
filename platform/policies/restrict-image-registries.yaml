@@ -24,7 +24,7 @@ spec:
         operations: ['CREATE', 'UPDATE']
   variables:
     - name: allowedPrefixes
-      expression: "['ghcr.io/victorma97/svc-']"  # idp:allowed-prefixes
+      expression: "['ghcr.io/victorma97/idp-sample-app', 'ghcr.io/victorma97/svc-']"  # idp:allowed-prefixes
     - name: allImages
       expression: >-
         object.spec.containers.map(c, c.image) +

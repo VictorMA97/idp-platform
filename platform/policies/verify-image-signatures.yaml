@@ -34,6 +34,7 @@ spec:
         resources: ['pods']
         operations: ['CREATE', 'UPDATE']
   matchImageReferences:
+    - glob: 'ghcr.io/victorma97/idp-sample-app*'  # idp:sample-app
     - glob: 'ghcr.io/victorma97/svc-*'  # idp:glob-anchor
   attestors:
     - name: cosign
@@ -45,7 +46,7 @@ spec:
               # fichero ci.yaml y rama main o master. Un fork o una rama de trabajo no pasan.
               # (?i): GitHub firma con las mayúsculas reales de tu usuario (VictorMA97) y ghcr.io va en minúsculas;
               # los usuarios de GitHub no distinguen mayúsculas ni pueden repetirse, así que no abre ningún hueco.
-              subjectRegExp: '(?i)^https://github\.com/VictorMA97/(svc-[a-z0-9-]+)/\.github/workflows/ci\.yaml@refs/heads/(main|master)$'  # idp:subject
+              subjectRegExp: '(?i)^https://github\.com/VictorMA97/(idp-sample-app|svc-[a-z0-9-]+)/\.github/workflows/ci\.yaml@refs/heads/(main|master)$'  # idp:subject
   validations:
     - expression: >-
         images.containers.map(image, verifyImageSignatures(image, [attestors.cosign])).all(e, e > 0)
