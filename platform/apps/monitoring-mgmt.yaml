@@ -29,9 +29,13 @@ spec:
         # node-exporter necesita montar el sistema de ficheros del host; da problemas en WSL2/k3d
         nodeExporter:
           enabled: false
-        # Sin webhook de admisión del operador: evita los Jobs de certificados, que Argo CD gestiona mal
+        # Sin webhook de admisión del operador: evita los Jobs de certificados, que Argo CD gestiona mal.
+        # Sin webhook nadie crea el secret de TLS, así que el operador tampoco debe montarlo
+        # (si no, el pod se queda en "secret ...-admission not found").
         prometheusOperator:
           admissionWebhooks:
+            enabled: false
+          tls:
             enabled: false
         prometheus:
           prometheusSpec:
