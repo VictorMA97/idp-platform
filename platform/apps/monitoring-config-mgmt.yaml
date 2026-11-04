@@ -1,0 +1,29 @@
+# ServiceMonitors (Argo CD, Kyverno), alertas y dashboards propios para el Prometheus de mgmt.
+# Depende de los CRD de monitoring-mgmt: si llegan antes, Argo CD reintenta.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring-config-mgmt
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: __REPO_URL__  # idp:repo-url
+    targetRevision: HEAD
+    path: platform/monitoring
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      # No falla la validación previa si los CRD de Prometheus aún no existen
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 15s
+        factor: 2
+        maxDuration: 3m

@@ -1,0 +1,98 @@
+# Observabilidad del clúster de gestión (mgmt): Prometheus, Alertmanager y Grafana.
+# Solo mgmt: los spokes dev/prod no se monitorizan (decisión de laboratorio, para ahorrar memoria).
+# Chart fijado: kube-prometheus-stack 92.16.2 (Prometheus Operator v0.94.2).
+# Las métricas de Argo CD y Kyverno, las alertas y los dashboards propios los añade la Application
+# monitoring-config-mgmt (carpeta platform/monitoring).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring-mgmt
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: 92.16.2
+    helm:
+      valuesObject:
+        # k3d ejecuta los "nodos" como contenedores: estos componentes no exponen métricas accesibles
+        # (o no existen como pods), y solo generarían alertas falsas (TargetDown).
+        kubeControllerManager:
+          enabled: false
+        kubeScheduler:
+          enabled: false
+        kubeEtcd:
+          enabled: false
+        kubeProxy:
+          enabled: false
+        # node-exporter necesita montar el sistema de ficheros del host; da problemas en WSL2/k3d
+        nodeExporter:
+          enabled: false
+        # Sin webhook de admisión del operador: evita los Jobs de certificados, que Argo CD gestiona mal
+        prometheusOperator:
+          admissionWebhooks:
+            enabled: false
+        prometheus:
+          prometheusSpec:
+            # Recoge TODOS los ServiceMonitor/PrometheusRule/PodMonitor del clúster, no solo los de este chart
+            serviceMonitorSelectorNilUsesHelmValues: false
+            podMonitorSelectorNilUsesHelmValues: false
+            ruleSelectorNilUsesHelmValues: false
+            probeSelectorNilUsesHelmValues: false
+            # Laboratorio: sin disco persistente (se pierden las métricas si el pod se reinicia)
+            retention: 3d
+            resources:
+              requests:
+                cpu: 100m
+                memory: 400Mi
+              limits:
+                memory: 800Mi
+        alertmanager:
+          alertmanagerSpec:
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                memory: 128Mi
+        grafana:
+          # Laboratorio: contraseña fija y conocida. En producción, un Secret (External Secrets)
+          adminPassword: admin
+          defaultDashboardsTimezone: Europe/Madrid
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            hosts:
+              - grafana.localtest.me
+            path: /
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 384Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  # El operador y el chart añaden metadatos a los CRD y Argo CD los vería como diferencia permanente
+  ignoreDifferences:
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      jsonPointers:
+        - /metadata/annotations
+        - /metadata/labels
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # Los CRD de Prometheus Operator son demasiado grandes para el "apply" de cliente
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m

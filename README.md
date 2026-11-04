@@ -196,6 +196,7 @@ abre en este repo. El servicio aparece solo en el catálogo en unos 5 minutos. D
 |---|---|
 | Argo CD | <http://argocd.localtest.me:8080> |
 | Backstage | <http://backstage.localtest.me:8080> |
+| Grafana (usuario `admin`, contraseña `admin`) | <http://grafana.localtest.me:8080> |
 | App de ejemplo (dev / prod) | <http://sample-app.dev.localtest.me:8081> / <http://sample-app.prod.localtest.me:8082> |
 | Servicio `svc-<nombre>` (dev / prod) | `http://<nombre>.dev.localtest.me:8081` / `http://<nombre>.prod.localtest.me:8082` |
 
@@ -267,6 +268,7 @@ abre en este repo. El servicio aparece solo en el catálogo en unos 5 minutos. D
 |---|---|
 | `docs/kyverno.md` | Políticas, modos Audit/Deny, Kyverno en mgmt, límites |
 | `docs/backstage.md` | OAuth App, secretos, despliegue, problemas de Backstage |
+| `docs/observability.md` | Prometheus, Grafana y Alertmanager en mgmt: qué se monitoriza y qué no |
 | `docs/golden-path.md` | Cómo funciona la plantilla de servicios y su modelo de seguridad |
 
 ## Hoja de ruta
@@ -277,7 +279,8 @@ abre en este repo. El servicio aparece solo en el catálogo en unos 5 minutos. D
 - [x] Kyverno: verificación de firmas en dev, prod y mgmt
 - [ ] Crossplane + CloudNativePG (base de datos self-service)
 - [ ] External Secrets / OpenBao
-- [ ] Observabilidad (Prometheus, Grafana, Loki, Tempo)
+- [x] Observabilidad de mgmt: Prometheus, Grafana, Alertmanager (métricas; sin logs ni trazas)
+- [ ] Observabilidad de dev/prod, Loki y Tempo
 - [ ] ADRs completos y demo en vídeo
 
 ## Decisiones (ADR resumido)

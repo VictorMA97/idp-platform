@@ -1,0 +1,49 @@
+# Alertas propias de la plataforma (las del clúster ya las trae kube-prometheus-stack).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: idp-platform
+  namespace: monitoring
+spec:
+  groups:
+    - name: idp.argocd
+      rules:
+        - alert: ArgoCDAppOutOfSync
+          expr: sum by (name) (argocd_app_info{sync_status!="Synced"}) > 0
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "La app {{ $labels.name }} de Argo CD lleva 15 min sin sincronizar"
+        - alert: ArgoCDAppUnhealthy
+          expr: sum by (name) (argocd_app_info{health_status!~"Healthy|Progressing"}) > 0
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "La app {{ $labels.name }} de Argo CD está {{ $labels.health_status }}"
+    - name: idp.kyverno
+      rules:
+        - alert: KyvernoAdmissionDown
+          # Con failurePolicy Fail, si el admission controller cae se bloquean los despliegues en backstage
+          expr: absent(up{namespace="kyverno", job=~".*admission.*"} == 1)
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "No hay admission controller de Kyverno activo: los pods de backstage no se podrán crear"
+    - name: idp.backstage
+      rules:
+        - alert: BackstagePodNotReady
+          expr: sum(kube_pod_status_ready{namespace="backstage", condition="true"}) == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Ningún pod de Backstage (o su PostgreSQL) está listo en el namespace backstage"
+        - alert: BackstagePodRestarting
+          expr: increase(kube_pod_container_status_restarts_total{namespace="backstage"}[15m]) > 3
+          labels:
+            severity: warning
+          annotations:
+            summary: "El pod {{ $labels.pod }} de backstage se ha reiniciado más de 3 veces en 15 min"

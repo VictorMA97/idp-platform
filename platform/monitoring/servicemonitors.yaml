@@ -1,0 +1,45 @@
+# Qué métricas recoge Prometheus además de las del propio clúster.
+# Los ServiceMonitor viven en "monitoring" pero apuntan a los Services de otros namespaces.
+---
+# Argo CD: application-controller, server, repo-server y applicationset-controller.
+# El manifiesto oficial de Argo CD ya crea los Services *-metrics con un puerto llamado "metrics".
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: argocd
+  namespace: monitoring
+spec:
+  namespaceSelector:
+    matchNames: [argocd]
+  selector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          - argocd-metrics
+          - argocd-server-metrics
+          - argocd-repo-server
+          - argocd-applicationset-controller
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+---
+# Kyverno: cada controlador tiene su Service de métricas (puerto 8000).
+# Se selecciona por etiqueta de instancia y se scrapea el puerto 8000 por número, para no depender
+# del nombre del puerto en el chart.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kyverno
+  namespace: monitoring
+spec:
+  namespaceSelector:
+    matchNames: [kyverno]
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: kyverno-mgmt
+  endpoints:
+    - targetPort: 8000
+      path: /metrics
+      interval: 30s
