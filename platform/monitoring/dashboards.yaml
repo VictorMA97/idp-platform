@@ -8,8 +8,6 @@ metadata:
   namespace: monitoring
   labels:
     grafana_dashboard: "1"
-  annotations:
-    grafana_folder: IDP
 data:
   idp-argocd.json: |
     {
@@ -149,8 +147,6 @@ metadata:
   namespace: monitoring
   labels:
     grafana_dashboard: "1"
-  annotations:
-    grafana_folder: IDP
 data:
   idp-kyverno.json: |
     {
@@ -290,8 +286,6 @@ metadata:
   namespace: monitoring
   labels:
     grafana_dashboard: "1"
-  annotations:
-    grafana_folder: IDP
 data:
   idp-backstage.json: |
     {

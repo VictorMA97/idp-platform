@@ -66,10 +66,10 @@ probar() {
 
 log "Casos de prueba (dry-run en mgmt/$NS)"
 probar registro-ajeno   "docker.io/library/nginx:1.27"                rechazado
-probar otro-repo-ghcr   "ghcr.io/victorma97/otro-repo:1.0"            rechazado
-probar tag-latest       "ghcr.io/victorma97/idp-backstage:latest"     rechazado
+probar otro-repo-ghcr   "ghcr.io/<usuario>/otro-repo:1.0"            rechazado
+probar tag-latest       "ghcr.io/<usuario>/idp-backstage:latest"     rechazado
 # Cumple el prefijo pero no está firmada: debe rechazarla la verificación de firma
-probar backstage-sin-firma "ghcr.io/victorma97/idp-backstage:sin-firma" rechazado
+probar backstage-sin-firma "ghcr.io/<usuario>/idp-backstage:sin-firma" rechazado
 
 current="$($K -n "$NS" get deploy backstage \
   -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || true)"

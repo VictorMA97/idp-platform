@@ -12,6 +12,8 @@ Prometheus y Alertmanager no tienen ingress: `kubectl --context k3d-mgmt -n moni
 
 ## Qué se monitoriza
 
+Los dashboards propios aparecen en *General* con el prefijo «IDP ·».
+
 - **Argo CD**: estado de sincronización y salud de cada app, sincronizaciones, peticiones git (dashboard *IDP · Argo CD*).
 - **Kyverno**: peticiones de admisión permitidas/denegadas, resultados por política, latencia (*IDP · Kyverno*).
 - **Backstage y PostgreSQL**: ninguno exporta métricas propias aquí, así que se ven CPU, memoria, reinicios y estado listo del namespace `backstage` (*IDP · Backstage y PostgreSQL*).

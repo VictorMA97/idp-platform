@@ -14,6 +14,7 @@ CI/CD firmado, despliegue por GitOps en dev y prod y políticas de seguridad ver
 | Kyverno | Solo admite imágenes de la plataforma, firmadas por su propio CI (Cosign keyless) | `platform/policies/` (dev y prod), `platform/policies-mgmt/` (Backstage) |
 | App de ejemplo (opcional) | Golden path de una app Python; no es necesaria para la plataforma | repo `idp-sample-app` |
 | Backstage | Portal: catálogo, plantillas y descubrimiento de servicios | repo `idp-backstage` |
+| Observabilidad (solo mgmt) | Prometheus, Alertmanager y Grafana con dashboards de Argo CD, Kyverno y Backstage | `platform/apps/monitoring-*.yaml`, `platform/monitoring/`, `docs/observability.md` |
 | Golden path | Crea un servicio `svc-<nombre>` desde Backstage | `docs/golden-path.md` |
 
 ## Los tres repositorios
@@ -39,6 +40,7 @@ Opcionalmente, los tres pueden agruparse bajo un repo paraguas `idp` (con ellos 
  │ mgmt   :8080              │   │ dev   :8081     │   │ prod   :8082    │
  │ Argo CD  Backstage        │──▶│ team-demo       │   │ team-demo       │
  │ PostgreSQL  Kyverno       │──▶│ apps + Kyverno  │   │ apps + Kyverno  │
+ │ Prometheus  Grafana       │   └─────────────────┘   └─────────────────┘
  └───────────────────────────┘   └─────────────────┘   └─────────────────┘
         ▲ lee de Git                    ▲ despliega por digest
    idp-platform  idp-backstage  idp-sample-app  svc-*
@@ -56,7 +58,7 @@ Opcionalmente, los tres pueden agruparse bajo un repo paraguas `idp` (con ellos 
 
 1. **Windows 11/10 con WSL2 + Ubuntu.** Trabaja siempre dentro de WSL y clona los repos en `~/` (nunca en `/mnt/c`).
 2. **Memoria de WSL limitada:** copia `docs/wslconfig.example` a `C:\Users\<usuario>\.wslconfig` y ejecuta
-   `wsl --shutdown` en PowerShell. Con los tres clústeres, Kyverno, Backstage y PostgreSQL, conviene un PC de 32 GB.
+   `wsl --shutdown` en PowerShell. Con los tres clústeres, Kyverno, Backstage y PostgreSQL, conviene un PC de 32 GB. La observabilidad añade ~1 GB de RAM en mgmt.
 3. **Docker** accesible desde WSL (Docker Desktop con integración WSL2, o Docker Engine dentro de Ubuntu).
 4. **k3d**: `curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash`
 5. **kubectl**: <https://kubernetes.io/docs/tasks/tools/>
@@ -90,7 +92,7 @@ make status
 ```
 
 `make root` activa la app raíz. A partir de aquí Argo CD instala, desde Git, cert-manager, la línea base
-de los spokes y Kyverno (con sus políticas) en dev, prod y mgmt.
+de los spokes, Kyverno (con sus políticas) en dev, prod y mgmt, y la observabilidad de mgmt (Prometheus, Alertmanager y Grafana). No hay que activar nada más: va incluida, pero depende de que `make set-repo` se haya ejecutado antes del push (la app `monitoring-config-mgmt` lee de tu repo).
 
 Comprobación (tarda unos minutos en estar todo en verde):
 
@@ -99,7 +101,10 @@ make status                                           # todas Synced/Healthy
 kubectl --context k3d-dev  -n kyverno get pods        # Kyverno en marcha
 kubectl --context k3d-mgmt -n kyverno get pods
 kubectl --context k3d-dev -n team-demo get quota,limitrange,netpol
+kubectl --context k3d-mgmt -n monitoring get pods     # Prometheus, Alertmanager, Grafana y operador en Running
 ```
+
+Observabilidad: abre <http://grafana.localtest.me:8080> (`admin` / `admin`, solo laboratorio). En *Dashboards* deben estar los de Kubernetes y, en *General*, los tres «IDP ·» (Argo CD, Kyverno, Backstage y PostgreSQL), con la ventana en *Last 1 hour*. Pueden tardar unos minutos en llenarse. Comprobaciones más finas (targets, reglas) en `docs/observability.md`.
 
 Las políticas de Kyverno empiezan en modo **Audit**: registran, pero no rechazan nada.
 
@@ -247,6 +252,9 @@ abre en este repo. El servicio aparece solo en el catálogo en unos 5 minutos. D
 | Puerto 8080 ocupado | Otro servicio de Windows o WSL | Cambia el mapeo en `clusters/mgmt.yaml` y las URLs |
 | Spokes en *Unknown* o error TLS | El certificado de la API no valida con el nombre interno | `SPOKE_INSECURE=1 make spokes` (solo laboratorio) |
 | `ComparisonError` en Argo CD | El repo no está en Git o `repoURL` incorrecta | `make set-repo`, push y espera |
+| `monitoring-config-mgmt` en *Unknown* (`repository not found`) | Tiene `__REPO_URL__`: se añadió después de `make set-repo` | `make set-repo REPO_URL=...`, commit y push |
+| Dashboards de Kubernetes sin datos justo tras el arranque | Prometheus aún no tiene datos suficientes, o la ventana de tiempo es muy larga | Espera unos minutos y usa *Last 1 hour* |
+| Se pierden las métricas tras `k3d cluster stop/start` | Prometheus no usa disco persistente | Esperado en el laboratorio; empieza a acumular de nuevo |
 | Todo va lento | Repo en `/mnt/c` o poca RAM para WSL | Muévelo a `~/` y revisa `.wslconfig` |
 | `kyverno-*` siempre OutOfSync | Metadatos vacíos en los CRD de Kyverno | Ya se ignoran en los manifiestos (`ignoreDifferences`) |
 | `ImagePullBackOff` en una app o servicio | Paquete de GHCR privado, o CI sin terminar | Haz público el paquete; espera al CI |
