@@ -8,7 +8,7 @@ Se despliega con Argo CD como el resto: dos Applications en `platform/apps/`.
 | `monitoring-config-mgmt` | Lo propio de la plataforma (`platform/monitoring/`): ServiceMonitors, alertas y dashboards |
 
 Acceso: <http://grafana.localtest.me:8080> (`admin` / `admin`, solo laboratorio).
-Prometheus y Alertmanager no tienen ingress: `kubectl --context k3d-mgmt -n monitoring port-forward svc/monitoring-mgmt-kube-prom-prometheus 9090` (el nombre exacto: `kubectl -n monitoring get svc`).
+Prometheus y Alertmanager no tienen ingress: `kubectl --context k3d-mgmt -n monitoring port-forward svc/monitoring-mgmt-kube-prome-prometheus 9090` (si no existe: `kubectl -n monitoring get svc | grep prometheus`).
 
 ## Qué se monitoriza
 
