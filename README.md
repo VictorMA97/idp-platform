@@ -27,6 +27,10 @@ CI/CD firmado, despliegue por GitOps en dev y prod y políticas de seguridad ver
 Los tres deben ser **públicos** (Argo CD lee de ellos sin credenciales) y viven en tu cuenta de GitHub.
 Cada servicio creado con la plantilla es un cuarto repo `svc-<nombre>`.
 
+Opcionalmente, los tres pueden agruparse bajo un repo paraguas `idp` (con ellos como submódulos de git). Desde ahí,
+`make doctor` comprueba las herramientas, `make configure OWNER=<usuario>` pone tu cuenta en los tres repos y
+`make rollback` deshace la puesta en marcha en los tres; el resto de comandos de este README funcionan igual.
+
 ## Arquitectura
 
 ```
@@ -121,8 +125,18 @@ make test-policies                          # ahora debe rechazar lo no autoriza
 
 La comprobación incluye que la imagen firmada de la app de ejemplo **pasa**. Haz siempre Audit → comprobar
 → Deny. Detalles y límites en `docs/kyverno.md`. Las políticas de Backstage (mgmt) se cambian aparte,
-cuando Backstage ya funcione (Etapa 5): `make policies-mode MODE=deny TARGET=mgmt` y
-`make test-policies POLICY_ENV=mgmt`.
+cuando Backstage ya funcione (Etapa 5), siempre con el mismo orden:
+
+```bash
+make test-policies POLICY_ENV=mgmt                                   # aún en Audit
+kubectl --context k3d-mgmt -n backstage get policyreport \
+  -o custom-columns=KIND:.scope.kind,NAME:.scope.name,PASS:.summary.pass,FAIL:.summary.fail   # FAIL = 0 en todos
+make policies-mode MODE=deny TARGET=mgmt
+git add -A && git commit -m "Kyverno mgmt en Deny" && git push
+make test-policies POLICY_ENV=mgmt                                   # debe rechazar lo no autorizado
+```
+
+Si algún informe muestra `fail` en `verify-image-signatures`, no pases a Deny: ver *Problemas conocidos*.
 
 ### Etapa 5. Backstage
 
@@ -140,9 +154,14 @@ cd idp-backstage
 git add -A && git commit -m "chore: cuenta y node_id" && git push     # el CI reconstruye la imagen
 ```
 
-Usa la misma cuenta que en `make set-owner` de la Etapa 2. El `metadata.name` del usuario en `org.yaml` da igual para
-el login: solo cuenta que `user-id` coincida con tu `node_id`. `./scripts/rollback.sh` de `idp-backstage` devuelve
-el `node_id` y la cuenta a sus placeholders: repite este paso al empezar de cero.
+Usa la misma cuenta que en `make set-owner` de la Etapa 2. Para entrar, el catálogo debe contener un `User` **válido**
+cuyo `github.com/user-id` coincida con tu `node_id`. Si el nombre del usuario en `org.yaml` es inválido (por ejemplo
+`<usuario>`, el placeholder que deja `./scripts/rollback.sh`), Backstage descarta toda la entidad y el login falla
+aunque el `node_id` sea correcto. `set-owner.sh` lo deja bien; no edites `org.yaml` a mano.
+
+**El catálogo va dentro de la imagen.** Tras el push, espera a que termine el CI de `idp-backstage` (Trivy, build y
+firma) y a que Argo CD despliegue el digest nuevo (`make status`) antes de intentar entrar. Si la imagen es la anterior,
+el usuario seguirá sin existir.
 
 Resumen del final:
 
@@ -155,6 +174,11 @@ git add -A && git commit -m "Activa Backstage" && git push
 Comprobación: `kubectl --context k3d-mgmt -n backstage get pods` (Backstage y PostgreSQL en `1/1`) e
 iniciar sesión con GitHub en <http://backstage.localtest.me:8080>. La app `backstage` da error de render
 hasta que el CI de `idp-backstage` escriba su primer digest: es lo esperado.
+
+Si el login falla, comprueba que el backend no descarta tu usuario:
+`kubectl --context k3d-mgmt -n backstage logs deploy/backstage -c backstage | grep "Policy check failed"`
+(no debe salir nada de `org.yaml`). Los `401` de `/api/auth/github/refresh` en el log o en la consola del navegador son
+normales: es el intento silencioso de renovar una sesión que aún no existe.
 
 **Guarda en un lugar seguro** los tres valores de `make backstage-secrets`: si recreas los clústeres,
 tendrás que volver a introducirlos.
@@ -206,7 +230,7 @@ abre en este repo. El servicio aparece solo en el catálogo en unos 5 minutos. D
   restaura la URL del repo a `__REPO_URL__` (lo que hizo `make set-repo`), borra los ficheros generados por
   `make sample-app` y `make backstage`, devuelve las políticas a Audit, quita `idp-sample-app` de las listas permitidas, restaura `<usuario>` en las políticas y tests (lo que hizo `make set-owner`), borra `platform/services/svc-*.yaml` y
   destruye los clústeres. No hace commit ni push: revisa con `git status`, súbelo y repite las Etapas 1 a 6.
-  No toca los otros repos, los paquetes de GHCR ni GitHub. Opciones: `DRY_RUN=1` (solo mostrar el plan),
+  No toca los otros repos (cada uno tiene su `scripts/rollback.sh`; desde el repo paraguas `idp`, `make rollback` ejecuta los tres), los paquetes de GHCR ni GitHub. Tras el rollback de `idp-backstage` el catálogo avisa de un usuario inválido (`<usuario>`) hasta que repitas `./scripts/set-owner.sh <usuario>`. Opciones: `DRY_RUN=1` (solo mostrar el plan),
   `FORCE=1` (sin confirmación), `KEEP_CLUSTERS=1`, `KEEP_SERVICES=1`.
 - `make down` elimina los clústeres y la red. **Se pierde todo**, incluidos el Secret `backstage-secrets` y
   los datos de PostgreSQL. Para volver: Etapas 1 a 6. Los repos en GitHub se conservan.
@@ -232,6 +256,9 @@ abre en este repo. El servicio aparece solo en el catálogo en unos 5 minutos. D
 | Crear el repo desde Backstage da 404 | El token de usuario no tiene permisos de escritura | Revoca la app en github.com/settings/applications, cierra sesión en Backstage y vuelve a entrar |
 | El formulario no avanza (*Form validation failed*) | El repo no empieza por `svc-` o tiene mayúsculas | Usa `svc-` + minúsculas, números y guiones |
 | Un `svc-*` no aparece en el catálogo | El descubrimiento corre cada 5 minutos | Espera; si no, mira el log: `kubectl --context k3d-mgmt -n backstage logs deploy/backstage -c backstage \| grep -i descubi` |
+| Backstage: *Failed to sign-in, unable to resolve user identity* | El catálogo no tiene un `User` válido con tu `node_id`: `org.yaml` con `__GITHUB_NODE_ID__` o con nombre `<usuario>`, o imagen anterior sin reconstruir | `./scripts/set-owner.sh <usuario>` en `idp-backstage`, push, espera CI y Argo CD; comprueba el log (`Policy check failed`) |
+| Backstage: `Failed to refresh access token, no access token received` (401 en `/refresh`) | Cookie de sesión antigua que GitHub ya no acepta (app revocada, secreto cambiado) | Borra las cookies de `backstage.localtest.me` o usa una ventana privada |
+| Kyverno: `verify-image-signatures` en `fail` con la imagen bien firmada | El `subjectRegExp` distinguía mayúsculas (GitHub firma como `VictorMA97`, no `victorma97`) | Ya es insensible a mayúsculas (`(?i)`); si persiste, mira que la imagen salga del `ci.yaml` de `main`/`master` |
 | Aviso de WebSocket `/api/signals` en la consola | Inofensivo: el primer intento llega antes de que el backend lo acepte | Ignorar |
 
 ## Documentación

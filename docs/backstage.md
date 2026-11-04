@@ -31,6 +31,9 @@ GitHub → Settings → Developer settings → OAuth Apps → New OAuth App:
 - Homepage URL: `http://backstage.localtest.me:8080`
 - Authorization callback URL: `http://backstage.localtest.me:8080/api/auth/github/handler/frame`
 
+Deja **desmarcadas** *Allow wildcard matching* y *Enable Device Flow*: no hacen falta y amplían sin motivo
+lo que GitHub acepta como destino de los tokens y como forma de autorizar.
+
 Genera un *client secret* y guarda el Client ID y el secret.
 
 ### 2. Token de GitHub
@@ -44,7 +47,7 @@ repositorios públicos. Backstage lo exige en la configuración; por ahora no es
 cd idp-backstage && ./scripts/set-owner.sh <tu-usuario>
 ```
 
-El script escribe tu `node_id` en `catalog/org.yaml` (sustituye `__GITHUB_NODE_ID__`) y ajusta tu cuenta en el
+El script escribe tu `node_id` y un nombre de usuario válido en `catalog/org.yaml` (sustituye `__GITHUB_NODE_ID__`) y ajusta tu cuenta en el
 descubrimiento, el catálogo y la plantilla. Si no puede consultar la API: `NODE_ID=$(gh api users/<tu-usuario> --jq .node_id) ./scripts/set-owner.sh <tu-usuario>`.
 Si no coincide, el login falla con *unable to resolve user identity*.
 
